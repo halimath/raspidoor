@@ -1,5 +1,8 @@
-from RPi import GPIO
+
+import logging
 import time
+
+from RPi import GPIO
 
 
 class LED:
@@ -9,17 +12,21 @@ class LED:
         self.off()
 
     def on(self):
-        self._state = True
-        GPIO.output(self._gpio_number, GPIO.HIGH)
+        self._set(True)
 
     def off(self):
-        self._state = False
-        GPIO.output(self._gpio_number, GPIO.LOW)
+        self._set(False)
 
     def blink(self):
         self.on()
         time.sleep(0.1)
         self.off()
+
+    def _set(self, state):
+        logging.debug(f"Setting LED on {self._gpio_number} to {state}")
+        self._state = state
+        GPIO.output(self._gpio_number, GPIO.HIGH if state else GPIO.LOW)
+
 
     @property
     def is_on(self):
@@ -27,14 +34,22 @@ class LED:
 
 
 class Switch:
-    def __init__(self, gpio_number):
+    def __init__(self, gpio_number, listener=None):
         self._gpio_number = gpio_number
-        GPIO.setup(self._gpio_number, GPIO.IN)
+        GPIO.setup(gpio_number, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.add_event_detect(24, GPIO.RISING, callback=self._callback)
 
-    @property
-    def is_pressed(self):
-        return GPIO.input(self._gpio_number) == GPIO.HIGH
+        self._listener = []
+        if listener is not None:
+            self._listener.append(listener)
 
+    def add_listener(self, listener):
+        self._listener.append(listener)
+
+    def _callback(self, _):
+        logging.debug(f"Received event for Switch on {self._gpio_number}")
+        for l in self._listener:
+            l()
 
 def init():
     GPIO.setmode(GPIO.BCM)

@@ -6,11 +6,12 @@ class SIPServer:
     SIPServer defines the configuration for a SIP server (or proxy) to talk to.
     """
 
-    def __init__(self, user, password, host, port):
+    def __init__(self, user, password, host, port, debug=False):
         self.host = host
         self.port = port
         self.user = user
         self.password = password
+        self.debug = debug
 
 
 class SIP:
@@ -55,18 +56,19 @@ def load_yaml(filename):
 
         return Config(
             sip=SIP(
-                caller=config["sip"]["caller"],
-                callee=config["sip"]["callee"],
+                caller=config['sip']['caller'],
+                callee=config['sip']['callee'],
                 server=SIPServer(
-                    host=config["sip"]["server"]["host"],
-                    port=config["sip"]["server"]["port"],
-                    user=config["sip"]["server"]["user"],
-                    password=config["sip"]["server"]["password"],
+                    host=config['sip']['server']['host'],
+                    port=config['sip']['server']['port'],
+                    user=config['sip']['server']['user'],
+                    password=config['sip']['server']['password'],
+                    debug=config['sip']['server']['debug'],
                 )
             ),
             gpio=GPIO(
-                led=config["gpio"]["led"],
-                door_bells=config["gpio"]["door-bells"],
+                led=config['gpio']['led'],
+                door_bells=config['gpio']['door-bells'],
             ),
-            debug=config["debug"],
+            debug=config['debug'],
         )

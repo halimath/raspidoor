@@ -1,28 +1,27 @@
 
-from raspidoor.sip.transport import TCPTransport
-from raspidoor.sip.dialog import Dialog
-
-
+from raspidoor.sip import TCPTransport, Client, DigestAuthenticationHandler
 class Dialout:
     @staticmethod
     def from_config(config):
-        return Dialout(
-            dialog=Dialog(transport=TCPTransport(
-                host=config.sip.server.host, port=config.sip.server.port, debug=config.debug),
-                caller=config.sip.caller,
-                username=config.sip.server.user,
+        sip_client = Client(
+            transport=TCPTransport(
+                host=config.sip.server.host, port=config.sip.server.port, debug=config.sip.server.debug),
+            auth_handler=DigestAuthenticationHandler(
+                username=config.sip.server.user, 
                 password=config.sip.server.password,
             ),
-            callee=config.sip.callee
+        )
+        return Dialout(
+            client=sip_client,
+            caller=config.sip.caller,
+            callee=config.sip.callee,
         )
 
-    def __init__(self, callee, dialog):
-        self.callee = callee
-        self._dialog = dialog
-        self._dialog.register()
-
-    def close(self):
-        self._dialog.close()
+    def __init__(self, client, caller, callee):
+        self._client = client
+        self._caller = caller
+        self._callee = callee
 
     def initiate_call(self):
-        self._dialog.invite(self.callee)
+        with self._client.start_dialog(self._caller) as dialog:
+            dialog.invite(self._callee)

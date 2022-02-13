@@ -1,6 +1,8 @@
 
-import time
+import functools
 import logging
+import threading
+import time
 
 from raspidoor.dialout import Dialout
 from raspidoor.gpio import LED, Switch
@@ -17,41 +19,26 @@ class Gatekeeper:
             door_bells=[Switch(gpio) for gpio in config.gpio.door_bells],
         )
 
-    def __init__(self, dialout, led, door_bells, interval=0.2):
+    def __init__(self, dialout, led, door_bells):
         self._dialout = dialout
         self._door_bells = door_bells
         self._led = led
-        self._interval = interval
-        self._keep_running = True
+        self._event = threading.Event()
+
+        for idx, b in enumerate(self._door_bells):
+            b.add_listener(functools.partial(self._bell_activate, idx))
+
+    def _bell_activate(self, idx):
+        logging.info(f"Door bell {idx} pressed; initiating call")
+        self._dialout.initiate_call()
 
     def run(self):
-        try:
-            logging.info("Starting gatekeeper")
+        logging.info("Starting gatekeeper")
+        self._led.on()
 
-            last_states = [False for b in self._door_bells]
+        self._event.wait()
 
-            self._led.on()
-
-            while True:
-                if not self._keep_running:
-                    break
-
-                time.sleep(self._interval)
-
-                for idx, bell in enumerate(self._door_bells):
-                    state = bell.is_pressed
-                    last_state = last_states[idx]
-
-                    if state and not last_state:
-                        logging.info(
-                            "Door bell {} pressed; initiating call".format(idx))
-                        last_states[idx] = True
-                        self._dialout.initiate_call()
-                    else:
-                        logging.debug("No state change for door bell {}")
-                        last_states[idx] = state
-        finally:
-            self._led.off()
+        self._led.off()
 
     def terminate(self):
-        self._keep_running = False
+        self._event.set()
