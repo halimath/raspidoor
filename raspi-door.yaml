@@ -15,12 +15,15 @@ sip:
     # Whether to dump protocol logs
     debug: False
 
-gpio:
+status_led:
   # GPIO number (not the physical pin) to connect the status LED on
-  led: 23
-  # GPIO number (not the physical pin) to connect door bells on. You may specify any number
-  door-bells:
-    - 24
+  gpio: 23
+
+# Defines the individual bell pushes the system should react on
+bell_pushes:
+  - label: Main door
+    # Each bell push has its own GPIO number (not physical pin) to read state from
+    gpio: 24
 
 # Whether to output debugging information (i.e. SIP protocol dumps)
 debug: True

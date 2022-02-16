@@ -24,25 +24,30 @@ class SIP:
         self.callee = callee
         self.server = server
 
-
-class GPIO:
+class LED:
     """
-    GPIO defines the configuration for the GPIO ports to use.
+    Configuration for the status LED.
     """
+    def __init__(self, gpio_number):
+        self.gpio_number = gpio_number        
 
-    def __init__(self, led, door_bells):
-        self.led = led
-        self.door_bells = door_bells
-
+class BellPush:
+    """
+    A single bell push the system should react on.
+    """
+    def __init__(self, gpio_number, label=None):
+        self.gpio_number = gpio_number
+        self.label = label
 
 class Config:
     """
     Config is the root class for storing the configuration
     """
 
-    def __init__(self, sip, gpio, debug):
+    def __init__(self, sip, status_led, bell_pushes, debug):
         self.sip = sip
-        self.gpio = gpio
+        self.status_led = status_led
+        self.bell_pushes = bell_pushes
         self.debug = debug
 
 
@@ -66,9 +71,7 @@ def load_yaml(filename):
                     debug=config['sip']['server']['debug'],
                 )
             ),
-            gpio=GPIO(
-                led=config['gpio']['led'],
-                door_bells=config['gpio']['door-bells'],
-            ),
+            status_led=LED(config['status_led']['gpio']),
+            bell_pushes=[BellPush(gpio_number=p['gpio'], label=p['label']) for p in config['bell_pushes']],
             debug=config['debug'],
         )

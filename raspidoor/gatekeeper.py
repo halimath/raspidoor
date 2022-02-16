@@ -15,18 +15,18 @@ class Gatekeeper:
     def from_config(config):
         return Gatekeeper(
             dialout=Dialout.from_config(config),
-            led=LED(config.gpio.led),
-            door_bells=[Switch(gpio) for gpio in config.gpio.door_bells],
+            status_led=LED(config.status_led.gpio_number),
+            bell_pushes=[Switch(p.gpio_number) for p in config.bell_pushes],
         )
 
-    def __init__(self, dialout, led, door_bells):
+    def __init__(self, dialout, status_led, bell_pushes):
         self._dialout = dialout
-        self._door_bells = door_bells
-        self._led = led
+        self._bell_pushes = bell_pushes
+        self._status_led = status_led
         self._event = threading.Event()
 
-        for idx, b in enumerate(self._door_bells):
-            b.add_listener(functools.partial(self._bell_activate, idx))
+        for idx, p in enumerate(self._bell_pushes):
+            p.add_listener(functools.partial(self._bell_activate, idx))
 
     def _bell_activate(self, idx):
         logging.info(f"Door bell {idx} pressed; initiating call")
@@ -34,11 +34,11 @@ class Gatekeeper:
 
     def run(self):
         logging.info("Starting gatekeeper")
-        self._led.on()
+        self._status_led.on()
 
         self._event.wait()
 
-        self._led.off()
+        self._status_led.off()
 
     def terminate(self):
         self._event.set()
