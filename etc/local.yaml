@@ -41,11 +41,14 @@ bellPushes:
 
 logging:
   # target defines where to write logs: stdout or syslog
-  target: syslog
+  target: stdout
 
   # Whether to output debugging information (i.e. SIP protocol dumps)
   debug: false
 
 controller:
   # Defines the path of the Unix socket to listen on for controller commands.
-  socket: /var/run/raspidoor.socket
+  socket: ./raspidoor.socket
+
+# Disable GPIP - useful for testing on non raspi.
+disableGpio: true

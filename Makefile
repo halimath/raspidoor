@@ -36,6 +36,9 @@ RM_OPTS := -rf
 raspidoord.$(GOARCH):
 	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -ldflags '-X main.Version=$(VERSION) -X main.Revision=$(REVISION) -X main.BuildTimestamp=$(BUILD_TIMESTAMP)' -o $@ cmd/raspidoord/main.go
 
+raspidoor.$(GOARCH):
+	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -o $@ cmd/raspidoor/main.go
+
 controller/controller.pb.go: controller/controller.proto
 	$(PROTOC) --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $<
 
@@ -46,16 +49,17 @@ install-dev: raspidoord.$(GOARCH)
 
 install-prod: install-prod-bin install-prod-systemd install-prod-config
 
-install-prod-bin: raspidoord.$(GOARCH)
+install-prod-bin: raspidoord.$(GOARCH) raspidoor.$(GOARCH)
 	$(SSH) $(SSH_OPTS) $(TARGET_PROD_USER)@$(TARGET_PROD_HOST) 'mkdir -p $(TARGET_PROD_DIR)'
 	$(SCP) $(SCP_OPTS) raspidoord.$(GOARCH) $(TARGET_PROD_USER)@$(TARGET_PROD_HOST):$(TARGET_PROD_DIR)/raspidoord
+	$(SCP) $(SCP_OPTS) raspidoor.$(GOARCH) $(TARGET_PROD_USER)@$(TARGET_PROD_HOST):/usr/local/bin/raspidoor
 
 install-prod-systemd:
-	$(SCP) $(SCP_OPTS) systemd/raspidoor.* $(TARGET_PROD_USER)@$(TARGET_PROD_HOST):/etc/systemd/system
+	$(SCP) $(SCP_OPTS) etc/systemd/raspidoor.* $(TARGET_PROD_USER)@$(TARGET_PROD_HOST):/etc/systemd/system
 
 install-prod-config:
 	$(SSH) $(SSH_OPTS) $(TARGET_PROD_USER)@$(TARGET_PROD_HOST) 'mkdir -p $(TARGET_PROD_CONFIG_DIR)'
-	$(SCP) $(SCP_OPTS) raspidoord.yaml $(TARGET_PROD_USER)@$(TARGET_PROD_HOST):$(TARGET_PROD_CONFIG_DIR)/raspidoord.yaml
+	$(SCP) $(SCP_OPTS) etc/raspidoord.yaml $(TARGET_PROD_USER)@$(TARGET_PROD_HOST):$(TARGET_PROD_CONFIG_DIR)/raspidoord.yaml
 
 clean:
 	$(RM) $(RM_OPTS) raspidoor.$(GOARCH)

@@ -1,0 +1,54 @@
+---
+sip:
+  # SIP address of the caller (i.e. the door bell)
+  caller: "sip:klingel1@fritz.box"
+  # SIP address of the callee (i.e. some internal phone number to ring)
+  callee: "sip:**611@fritz.box"
+  server:
+    # The SIP host (your phone router)
+    host: "fritz.box"
+    # The SIP port (should be 5060 by default)
+    port: 5060
+    # The SIP user name to authenticate with
+    user: klingel1
+    # The SIP password to authenticate with
+    password: "password001"
+    # Whether to dump protocol logs
+    debug: false
+
+# Config for the status LED
+statusLed:
+  # GPIO number (not the physical pin) to connect
+  gpio: 18
+  # Duration to blink the status LED when a bell push is pressed
+  blinkDuration: 10s
+
+# External bell is anything that can be switched on and off
+externalBell:
+  # GPIO number (not the physical pin) to connect
+  gpio: 25
+  # Duration to ring the external bell (keep the relay open) when a bell push is pressed
+  ringDuration: 2s
+
+# Defines the individual bell pushes the system should react on
+bellPushes:
+  - label: Main door
+    # Each bell push has its own GPIO number (not physical pin) to read state from
+    gpio: 23
+  - label: Garden Door
+    # Each bell push has its own GPIO number (not physical pin) to read state from
+    gpio: 24
+
+logging:
+  # target defines where to write logs: stdout or syslog
+  target: syslog
+
+  # Whether to output debugging information (i.e. SIP protocol dumps)
+  debug: false
+
+controller:
+  # Defines the path of the Unix socket to listen on for controller commands.
+  socket: /var/run/raspidoor.socket
+
+# Disable GPIP - useful for testing on non raspi.
+disableGpio: false

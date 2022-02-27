@@ -1,12 +1,17 @@
 package gatekeeper
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/halimath/raspidoor/internal/gpio"
-	"github.com/halimath/raspidoor/internal/logging"
 	"github.com/halimath/raspidoor/internal/sip"
+	"github.com/halimath/raspidoor/logging"
+)
+
+var (
+	ErrNoSuchBellPush = errors.New("no such bell push")
 )
 
 type SIPOptions struct {
@@ -36,7 +41,18 @@ type Options struct {
 	StatusLED    GPIOOutputOptions
 	ExternalBell GPIOOutputOptions
 	BellPushes   []BellPushOptions
-	Logger       logging.Logger
+	DisableGPIO  bool
+}
+
+type bellPush struct {
+	enabled bool
+	label   string
+	btn     *gpio.Button
+}
+
+type externalBell struct {
+	enabled bool
+	out     *gpio.OnOffOutput
 }
 
 type Gatekeeper struct {
@@ -47,19 +63,27 @@ type Gatekeeper struct {
 	authHandler  []sip.AuthenticationHandler
 
 	statusLED    *gpio.LED
-	externalBell *gpio.OnOffOutput
-	bellPushes   []*gpio.Button
+	externalBell externalBell
+	bellPushes   []bellPush
+
+	logger logging.Logger
 }
 
-func New(opts Options) (*Gatekeeper, error) {
-	led, err := gpio.NewLED(chip(opts.StatusLED.GPIOOptions), opts.StatusLED.GPIO)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create status led: %w", err)
-	}
+func New(opts Options, logger logging.Logger) (*Gatekeeper, error) {
+	var led *gpio.LED
+	var extlBell *gpio.OnOffOutput
+	var err error
 
-	externalBell, err := gpio.NewOnOffOutput(chip(opts.ExternalBell.GPIOOptions), opts.ExternalBell.GPIO)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create external bell: %w", err)
+	if !opts.DisableGPIO {
+		led, err = gpio.NewLED(chip(opts.StatusLED.GPIOOptions), opts.StatusLED.GPIO)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create status led: %w", err)
+		}
+
+		extlBell, err = gpio.NewOnOffOutput(chip(opts.ExternalBell.GPIOOptions), opts.ExternalBell.GPIO)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create external bell: %w", err)
+		}
 	}
 
 	g := &Gatekeeper{
@@ -70,32 +94,44 @@ func New(opts Options) (*Gatekeeper, error) {
 		roundTripper: opts.SIP.RoundTripper,
 		authHandler:  opts.SIP.AuthHandler,
 		statusLED:    led,
-		externalBell: externalBell,
+		externalBell: externalBell{
+			enabled: true,
+			out:     extlBell,
+		},
+
+		logger: logger,
 	}
 
-	pushes := make([]*gpio.Button, len(opts.BellPushes))
+	pushes := make([]bellPush, len(opts.BellPushes))
 	for i, p := range opts.BellPushes {
-		sw, err := func(i int, p BellPushOptions) (*gpio.Button, error) {
-			btn, err := gpio.NewButton(chip(p.GPIOOptions), p.GPIO, gpio.TypePullUp)
-			if err != nil {
-				return nil, err
-			}
-
-			btn.AddCallback(func(pressed bool) {
-				if !pressed {
-					return
+		var sw *gpio.Button
+		if !opts.DisableGPIO {
+			sw, err = func(i int, p BellPushOptions) (*gpio.Button, error) {
+				btn, err := gpio.NewButton(chip(p.GPIOOptions), p.GPIO, gpio.TypePullUp)
+				if err != nil {
+					return nil, err
 				}
 
-				g.bellPushPressed(i, p.Label)
-			})
+				btn.AddCallback(func(pressed bool) {
+					if !pressed {
+						return
+					}
 
-			return btn, nil
-		}(i, p)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create bell switch '%s': %w", p.Label, err)
+					g.bellPushPressed(i)
+				})
+
+				return btn, nil
+			}(i, p)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create bell switch '%s': %w", p.Label, err)
+			}
 		}
 
-		pushes[i] = sw
+		pushes[i] = bellPush{
+			enabled: true,
+			label:   p.Label,
+			btn:     sw,
+		}
 	}
 
 	g.bellPushes = pushes
@@ -104,21 +140,25 @@ func New(opts Options) (*Gatekeeper, error) {
 }
 
 func (g *Gatekeeper) Start() {
-	g.opts.Logger.Info("Starting gatekeeper")
-	g.statusLED.On()
+	g.logger.Info("Starting gatekeeper")
+	if !g.opts.DisableGPIO {
+		g.statusLED.On()
+	}
 }
 
 func (g *Gatekeeper) Close() error {
-	g.opts.Logger.Info("Shutting down gatekeeper")
+	g.logger.Info("Shutting down gatekeeper")
 
-	g.statusLED.Off()
-	if err := g.statusLED.Close(); err != nil {
-		return err
-	}
-
-	for _, p := range g.bellPushes {
-		if err := p.Close(); err != nil {
+	if !g.opts.DisableGPIO {
+		g.statusLED.Off()
+		if err := g.statusLED.Close(); err != nil {
 			return err
+		}
+
+		for _, p := range g.bellPushes {
+			if err := p.btn.Close(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -126,30 +166,49 @@ func (g *Gatekeeper) Close() error {
 		return err
 	}
 
-	return g.opts.Logger.Close()
+	return g.logger.Close()
 }
 
-func (g *Gatekeeper) bellPushPressed(idx int, label string) {
-	g.opts.Logger.Info("Pressed bell push %s (%d)\n", label, idx)
+func (g *Gatekeeper) bellPushPressed(idx int) {
+	g.logger.Info("Pressed bell push %d: %s", idx, g.bellPushes[idx].label)
+
+	if !g.bellPushes[idx].enabled {
+		g.logger.Info("Bell push %d disabled; not ringing", idx)
+		return
+	}
 
 	g.Ring()
 }
 
 func (g *Gatekeeper) Ring() {
-	if err := g.statusLED.BlinkFor(g.opts.StatusLED.Duration, 100*time.Millisecond); err != nil {
-		g.opts.Logger.Error("failed to blink status led: %s", err)
-	}
+	if !g.opts.DisableGPIO {
+		if err := g.statusLED.BlinkFor(g.opts.StatusLED.Duration, 100*time.Millisecond); err != nil {
+			g.logger.Error("failed to blink status led: %s", err)
+		}
 
-	if err := g.externalBell.OnFor(g.opts.ExternalBell.Duration); err != nil {
-		g.opts.Logger.Error("failed to activate external bell: %s", err)
+		if g.externalBell.enabled {
+			if err := g.externalBell.out.OnFor(g.opts.ExternalBell.Duration); err != nil {
+				g.logger.Error("failed to activate external bell: %s", err)
+			}
+		}
 	}
 
 	go func() {
 		d := sip.NewDialog(g.roundTripper, g.caller, g.authHandler...)
 		if err := d.Ring(g.callee); err != nil {
-			g.opts.Logger.Error("failed to ring SIP phone: %s", err)
+			g.logger.Error("failed to ring SIP phone: %s", err)
 		}
 	}()
+}
+
+func (g *Gatekeeper) SetBellPushState(index int, enabled bool) error {
+	if index >= len(g.bellPushes) {
+		return fmt.Errorf("%w: %d", ErrNoSuchBellPush, index)
+	}
+
+	g.bellPushes[index].enabled = enabled
+
+	return nil
 }
 
 func chip(o GPIOOptions) string {

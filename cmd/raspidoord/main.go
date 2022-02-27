@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/halimath/raspidoor/internal/config"
+	"github.com/halimath/raspidoor/internal/controller"
 	"github.com/halimath/raspidoor/internal/gatekeeper"
 	"github.com/halimath/raspidoor/internal/systemd"
 )
@@ -37,24 +38,35 @@ func doMain() error {
 		return err
 	}
 
+	logger, err := c.NewLogger()
+	if err != nil {
+		return err
+	}
+
+	logger.Info("raspidoord/%s (+github.com/halimath/raspidoor, built %s, git %s)", Version, Revision, BuildTimestamp)
+
 	gc, err := c.GatekeeperOptions()
 	if err != nil {
 		return err
 	}
 
-	notifier := systemd.DetectNotifier(gc.Logger)
+	notifier := systemd.DetectNotifier(logger)
 
-	gc.Logger.Info("github.com/halimath/raspidoor v%s (%s; %s)", Version, Revision, BuildTimestamp)
-
-	g, err := gatekeeper.New(gc)
+	g, err := gatekeeper.New(gc, logger)
 	if err != nil {
 		return err
 	}
 	defer g.Close()
 
+	ctrl, err := controller.New(g, c.Controller.Socket, logger)
+	if err != nil {
+		return err
+	}
+	defer ctrl.Close()
+
 	g.Start()
 	if err := notifier.Notify(systemd.NotificationReady); err != nil {
-		gc.Logger.Err(err)
+		logger.Err(err)
 	}
 
 	signalChan := make(chan os.Signal)
@@ -62,7 +74,7 @@ func doMain() error {
 	<-signalChan
 
 	if err := notifier.Notify(systemd.NotificationStopping); err != nil {
-		gc.Logger.Err(err)
+		logger.Err(err)
 	}
 
 	return nil

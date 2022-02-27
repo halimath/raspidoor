@@ -8,8 +8,8 @@ import (
 
 	"github.com/halimath/raspidoor/internal/gatekeeper"
 	"github.com/halimath/raspidoor/internal/gpio"
-	"github.com/halimath/raspidoor/internal/logging"
 	"github.com/halimath/raspidoor/internal/sip"
+	"github.com/halimath/raspidoor/logging"
 	"gopkg.in/yaml.v2"
 )
 
@@ -69,6 +69,12 @@ type (
 		GPIO int `yaml:"gpio"`
 	}
 
+	// Controller defines the config for the controller.
+	Controller struct {
+		// Socket defines the path of the Unix socket to receive commands on.
+		Socket string `yaml:"socket"`
+	}
+
 	// Logging defines the log configuration
 	Logging struct {
 		// Target defines the log target; must be either STDOUT or SYSLOG
@@ -85,8 +91,17 @@ type (
 		ExternalBell ExternalBell `yaml:"externalBell"`
 		BellPushes   []BellPush   `yaml:"bellPushes"`
 		Logging      Logging      `yaml:"logging"`
+		Controller   Controller   `yaml:"controller"`
+		DisableGPIO  bool         `yaml:"disableGpio"`
 	}
 )
+
+func (c Config) NewLogger() (logging.Logger, error) {
+	if c.Logging.Target == "syslog" {
+		return logging.Syslog()
+	}
+	return logging.Stdout(), nil
+}
 
 func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 	caller, err := sip.ParseURI(c.SIP.Caller)
@@ -115,17 +130,6 @@ func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 		transport.DumpRoundTrips = true
 	}
 
-	var l logging.Logger
-
-	if c.Logging.Target == "syslog" {
-		l, err = logging.Syslog()
-		if err != nil {
-			return gatekeeper.Options{}, err
-		}
-	} else {
-		l = logging.Stdout()
-	}
-
 	return gatekeeper.Options{
 		SIP: gatekeeper.SIPOptions{
 			Caller:       caller,
@@ -147,8 +151,8 @@ func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 			},
 			Duration: c.ExternalBell.RingDuration,
 		},
-		BellPushes: bellPushes,
-		Logger:     l,
+		BellPushes:  bellPushes,
+		DisableGPIO: c.DisableGPIO,
 	}, nil
 }
 

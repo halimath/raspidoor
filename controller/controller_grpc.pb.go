@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControllerClient interface {
-	SetBellSwitch(ctx context.Context, in *BellSwitchMessage, opts ...grpc.CallOption) (*Result, error)
+	SetBellPushState(ctx context.Context, in *BellPushState, opts ...grpc.CallOption) (*Result, error)
 }
 
 type controllerClient struct {
@@ -29,9 +29,9 @@ func NewControllerClient(cc grpc.ClientConnInterface) ControllerClient {
 	return &controllerClient{cc}
 }
 
-func (c *controllerClient) SetBellSwitch(ctx context.Context, in *BellSwitchMessage, opts ...grpc.CallOption) (*Result, error) {
+func (c *controllerClient) SetBellPushState(ctx context.Context, in *BellPushState, opts ...grpc.CallOption) (*Result, error) {
 	out := new(Result)
-	err := c.cc.Invoke(ctx, "/controller.Controller/SetBellSwitch", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/controller.Controller/SetBellPushState", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *controllerClient) SetBellSwitch(ctx context.Context, in *BellSwitchMess
 // All implementations must embed UnimplementedControllerServer
 // for forward compatibility
 type ControllerServer interface {
-	SetBellSwitch(context.Context, *BellSwitchMessage) (*Result, error)
+	SetBellPushState(context.Context, *BellPushState) (*Result, error)
 	mustEmbedUnimplementedControllerServer()
 }
 
@@ -50,8 +50,8 @@ type ControllerServer interface {
 type UnimplementedControllerServer struct {
 }
 
-func (UnimplementedControllerServer) SetBellSwitch(context.Context, *BellSwitchMessage) (*Result, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetBellSwitch not implemented")
+func (UnimplementedControllerServer) SetBellPushState(context.Context, *BellPushState) (*Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetBellPushState not implemented")
 }
 func (UnimplementedControllerServer) mustEmbedUnimplementedControllerServer() {}
 
@@ -66,20 +66,20 @@ func RegisterControllerServer(s grpc.ServiceRegistrar, srv ControllerServer) {
 	s.RegisterService(&Controller_ServiceDesc, srv)
 }
 
-func _Controller_SetBellSwitch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BellSwitchMessage)
+func _Controller_SetBellPushState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BellPushState)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControllerServer).SetBellSwitch(ctx, in)
+		return srv.(ControllerServer).SetBellPushState(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/controller.Controller/SetBellSwitch",
+		FullMethod: "/controller.Controller/SetBellPushState",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControllerServer).SetBellSwitch(ctx, req.(*BellSwitchMessage))
+		return srv.(ControllerServer).SetBellPushState(ctx, req.(*BellPushState))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +92,8 @@ var Controller_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ControllerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SetBellSwitch",
-			Handler:    _Controller_SetBellSwitch_Handler,
+			MethodName: "SetBellPushState",
+			Handler:    _Controller_SetBellPushState_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
