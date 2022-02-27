@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "github.com/halimath/raspidoor/controller";
+
+package controller;
+
+service Controller {
+    rpc SetBellSwitch(BellSwitchMessage) returns (Result) {}
+}
+
+message Result {
+    bool ok = 1;
+    string error = 2;
+}
+
+message BellSwitchMessage {
+    int32 index = 1;
+    bool status = 2;
+}

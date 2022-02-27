@@ -1,0 +1,16 @@
+[Unit]
+Description=raspidoor service
+Documentation=https://github.com/halimath/raspidoor
+After=syslog.target network-online.target nss-lookup.target
+Wants=network-online.target
+Requires=raspidoor.socket
+
+[Service]
+#Type=simple
+Type=notify
+ExecStart=/opt/raspidoor/raspidoord
+PIDFile=/run/raspidoord.pid
+ExecStop=/bin/kill -s QUIT $MAINPID
+
+[Install]
+WantedBy=default.target

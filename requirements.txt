@@ -1,2 +1,0 @@
-PyYAML==6.0
-RPi.GPIO==0.7.1
