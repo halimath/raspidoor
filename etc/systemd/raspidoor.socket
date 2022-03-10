@@ -1,8 +1,0 @@
-[Unit]
-Description=raspidoor socket
-Documentation=https://github.com/halimath/raspidoor
-AssertPathExists=/var/run
-PartOf=raspidoor.server
-
-[Socket]
-ListenDatagram=/var/run/raspidoor.socket

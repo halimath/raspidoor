@@ -20,6 +20,93 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Target int32
+
+const (
+	Target_BELL_PUSH     Target = 0
+	Target_EXTERNAL_BELL Target = 1
+	Target_PHONE         Target = 2
+)
+
+// Enum value maps for Target.
+var (
+	Target_name = map[int32]string{
+		0: "BELL_PUSH",
+		1: "EXTERNAL_BELL",
+		2: "PHONE",
+	}
+	Target_value = map[string]int32{
+		"BELL_PUSH":     0,
+		"EXTERNAL_BELL": 1,
+		"PHONE":         2,
+	}
+)
+
+func (x Target) Enum() *Target {
+	p := new(Target)
+	*p = x
+	return p
+}
+
+func (x Target) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Target) Descriptor() protoreflect.EnumDescriptor {
+	return file_controller_controller_proto_enumTypes[0].Descriptor()
+}
+
+func (Target) Type() protoreflect.EnumType {
+	return &file_controller_controller_proto_enumTypes[0]
+}
+
+func (x Target) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Target.Descriptor instead.
+func (Target) EnumDescriptor() ([]byte, []int) {
+	return file_controller_controller_proto_rawDescGZIP(), []int{0}
+}
+
+type Empty struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Empty) Reset() {
+	*x = Empty{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_controller_controller_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Empty) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Empty) ProtoMessage() {}
+
+func (x *Empty) ProtoReflect() protoreflect.Message {
+	mi := &file_controller_controller_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
+func (*Empty) Descriptor() ([]byte, []int) {
+	return file_controller_controller_proto_rawDescGZIP(), []int{0}
+}
+
 type Result struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -32,7 +119,7 @@ type Result struct {
 func (x *Result) Reset() {
 	*x = Result{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controller_controller_proto_msgTypes[0]
+		mi := &file_controller_controller_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -45,7 +132,7 @@ func (x *Result) String() string {
 func (*Result) ProtoMessage() {}
 
 func (x *Result) ProtoReflect() protoreflect.Message {
-	mi := &file_controller_controller_proto_msgTypes[0]
+	mi := &file_controller_controller_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +145,7 @@ func (x *Result) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Result.ProtoReflect.Descriptor instead.
 func (*Result) Descriptor() ([]byte, []int) {
-	return file_controller_controller_proto_rawDescGZIP(), []int{0}
+	return file_controller_controller_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Result) GetOk() bool {
@@ -75,32 +162,32 @@ func (x *Result) GetError() string {
 	return ""
 }
 
-type BellPushState struct {
+type ItemState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Index int32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
-	State bool  `protobuf:"varint,2,opt,name=state,proto3" json:"state,omitempty"`
+	Label   string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Enabled bool   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 
-func (x *BellPushState) Reset() {
-	*x = BellPushState{}
+func (x *ItemState) Reset() {
+	*x = ItemState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_controller_controller_proto_msgTypes[1]
+		mi := &file_controller_controller_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *BellPushState) String() string {
+func (x *ItemState) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BellPushState) ProtoMessage() {}
+func (*ItemState) ProtoMessage() {}
 
-func (x *BellPushState) ProtoReflect() protoreflect.Message {
-	mi := &file_controller_controller_proto_msgTypes[1]
+func (x *ItemState) ProtoReflect() protoreflect.Message {
+	mi := &file_controller_controller_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -111,23 +198,141 @@ func (x *BellPushState) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BellPushState.ProtoReflect.Descriptor instead.
-func (*BellPushState) Descriptor() ([]byte, []int) {
-	return file_controller_controller_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ItemState.ProtoReflect.Descriptor instead.
+func (*ItemState) Descriptor() ([]byte, []int) {
+	return file_controller_controller_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *BellPushState) GetIndex() int32 {
+func (x *ItemState) GetLabel() string {
 	if x != nil {
-		return x.Index
+		return x.Label
 	}
-	return 0
+	return ""
 }
 
-func (x *BellPushState) GetState() bool {
+func (x *ItemState) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type StateInfo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BellPushes []*ItemState `protobuf:"bytes,1,rep,name=bellPushes,proto3" json:"bellPushes,omitempty"`
+	Bells      []*ItemState `protobuf:"bytes,2,rep,name=bells,proto3" json:"bells,omitempty"`
+}
+
+func (x *StateInfo) Reset() {
+	*x = StateInfo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_controller_controller_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StateInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateInfo) ProtoMessage() {}
+
+func (x *StateInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_controller_controller_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StateInfo.ProtoReflect.Descriptor instead.
+func (*StateInfo) Descriptor() ([]byte, []int) {
+	return file_controller_controller_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *StateInfo) GetBellPushes() []*ItemState {
+	if x != nil {
+		return x.BellPushes
+	}
+	return nil
+}
+
+func (x *StateInfo) GetBells() []*ItemState {
+	if x != nil {
+		return x.Bells
+	}
+	return nil
+}
+
+type EnabledState struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Target Target `protobuf:"varint,1,opt,name=target,proto3,enum=controller.Target" json:"target,omitempty"`
+	State  bool   `protobuf:"varint,2,opt,name=state,proto3" json:"state,omitempty"`
+	Index  int32  `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
+}
+
+func (x *EnabledState) Reset() {
+	*x = EnabledState{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_controller_controller_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EnabledState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnabledState) ProtoMessage() {}
+
+func (x *EnabledState) ProtoReflect() protoreflect.Message {
+	mi := &file_controller_controller_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnabledState.ProtoReflect.Descriptor instead.
+func (*EnabledState) Descriptor() ([]byte, []int) {
+	return file_controller_controller_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *EnabledState) GetTarget() Target {
+	if x != nil {
+		return x.Target
+	}
+	return Target_BELL_PUSH
+}
+
+func (x *EnabledState) GetState() bool {
 	if x != nil {
 		return x.State
 	}
 	return false
+}
+
+func (x *EnabledState) GetIndex() int32 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
 }
 
 var File_controller_controller_proto protoreflect.FileDescriptor
@@ -135,22 +340,46 @@ var File_controller_controller_proto protoreflect.FileDescriptor
 var file_controller_controller_proto_rawDesc = []byte{
 	0x0a, 0x1b, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x63, 0x6f, 0x6e,
 	0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0a, 0x63,
-	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x22, 0x2e, 0x0a, 0x06, 0x52, 0x65, 0x73,
-	0x75, 0x6c, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x6f, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52,
-	0x02, 0x6f, 0x6b, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x22, 0x3b, 0x0a, 0x0d, 0x42, 0x65, 0x6c,
-	0x6c, 0x50, 0x75, 0x73, 0x68, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e,
-	0x64, 0x65, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78,
-	0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52,
-	0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x32, 0x51, 0x0a, 0x0a, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x6f,
-	0x6c, 0x6c, 0x65, 0x72, 0x12, 0x43, 0x0a, 0x10, 0x53, 0x65, 0x74, 0x42, 0x65, 0x6c, 0x6c, 0x50,
-	0x75, 0x73, 0x68, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x19, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72,
-	0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e, 0x42, 0x65, 0x6c, 0x6c, 0x50, 0x75, 0x73, 0x68, 0x53, 0x74,
-	0x61, 0x74, 0x65, 0x1a, 0x12, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72,
-	0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x00, 0x42, 0x2a, 0x5a, 0x28, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x61, 0x6c, 0x69, 0x6d, 0x61, 0x74, 0x68,
-	0x2f, 0x72, 0x61, 0x73, 0x70, 0x69, 0x64, 0x6f, 0x6f, 0x72, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72,
-	0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x22, 0x07, 0x0a, 0x05, 0x45, 0x6d, 0x70,
+	0x74, 0x79, 0x22, 0x2e, 0x0a, 0x06, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x0e, 0x0a, 0x02,
+	0x6f, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x02, 0x6f, 0x6b, 0x12, 0x14, 0x0a, 0x05,
+	0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x72, 0x72,
+	0x6f, 0x72, 0x22, 0x3b, 0x0a, 0x09, 0x49, 0x74, 0x65, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12,
+	0x14, 0x0a, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x6c, 0x61, 0x62, 0x65, 0x6c, 0x12, 0x18, 0x0a, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x22,
+	0x6f, 0x0a, 0x09, 0x53, 0x74, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x35, 0x0a, 0x0a,
+	0x62, 0x65, 0x6c, 0x6c, 0x50, 0x75, 0x73, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x15, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e, 0x49, 0x74,
+	0x65, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x0a, 0x62, 0x65, 0x6c, 0x6c, 0x50, 0x75, 0x73,
+	0x68, 0x65, 0x73, 0x12, 0x2b, 0x0a, 0x05, 0x62, 0x65, 0x6c, 0x6c, 0x73, 0x18, 0x02, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x15, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e,
+	0x49, 0x74, 0x65, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x62, 0x65, 0x6c, 0x6c, 0x73,
+	0x22, 0x66, 0x0a, 0x0c, 0x45, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x12, 0x2a, 0x0a, 0x06, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e,
+	0x32, 0x12, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e, 0x54, 0x61,
+	0x72, 0x67, 0x65, 0x74, 0x52, 0x06, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x12, 0x14, 0x0a, 0x05,
+	0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x73, 0x74, 0x61,
+	0x74, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x05, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x2a, 0x35, 0x0a, 0x06, 0x54, 0x61, 0x72, 0x67,
+	0x65, 0x74, 0x12, 0x0d, 0x0a, 0x09, 0x42, 0x45, 0x4c, 0x4c, 0x5f, 0x50, 0x55, 0x53, 0x48, 0x10,
+	0x00, 0x12, 0x11, 0x0a, 0x0d, 0x45, 0x58, 0x54, 0x45, 0x52, 0x4e, 0x41, 0x4c, 0x5f, 0x42, 0x45,
+	0x4c, 0x4c, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x50, 0x48, 0x4f, 0x4e, 0x45, 0x10, 0x02, 0x32,
+	0xac, 0x01, 0x0a, 0x0a, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x12, 0x3a,
+	0x0a, 0x08, 0x53, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x18, 0x2e, 0x63, 0x6f, 0x6e,
+	0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e, 0x45, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x53,
+	0x74, 0x61, 0x74, 0x65, 0x1a, 0x12, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65,
+	0x72, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x00, 0x12, 0x2e, 0x0a, 0x04, 0x52, 0x69,
+	0x6e, 0x67, 0x12, 0x11, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e,
+	0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x11, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c,
+	0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00, 0x12, 0x32, 0x0a, 0x04, 0x49, 0x6e,
+	0x66, 0x6f, 0x12, 0x11, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2e,
+	0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x15, 0x2e, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c,
+	0x65, 0x72, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x42, 0x2a,
+	0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x61, 0x6c,
+	0x69, 0x6d, 0x61, 0x74, 0x68, 0x2f, 0x72, 0x61, 0x73, 0x70, 0x69, 0x64, 0x6f, 0x6f, 0x72, 0x2f,
+	0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -165,19 +394,31 @@ func file_controller_controller_proto_rawDescGZIP() []byte {
 	return file_controller_controller_proto_rawDescData
 }
 
-var file_controller_controller_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_controller_controller_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_controller_controller_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_controller_controller_proto_goTypes = []interface{}{
-	(*Result)(nil),        // 0: controller.Result
-	(*BellPushState)(nil), // 1: controller.BellPushState
+	(Target)(0),          // 0: controller.Target
+	(*Empty)(nil),        // 1: controller.Empty
+	(*Result)(nil),       // 2: controller.Result
+	(*ItemState)(nil),    // 3: controller.ItemState
+	(*StateInfo)(nil),    // 4: controller.StateInfo
+	(*EnabledState)(nil), // 5: controller.EnabledState
 }
 var file_controller_controller_proto_depIdxs = []int32{
-	1, // 0: controller.Controller.SetBellPushState:input_type -> controller.BellPushState
-	0, // 1: controller.Controller.SetBellPushState:output_type -> controller.Result
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	3, // 0: controller.StateInfo.bellPushes:type_name -> controller.ItemState
+	3, // 1: controller.StateInfo.bells:type_name -> controller.ItemState
+	0, // 2: controller.EnabledState.target:type_name -> controller.Target
+	5, // 3: controller.Controller.SetState:input_type -> controller.EnabledState
+	1, // 4: controller.Controller.Ring:input_type -> controller.Empty
+	1, // 5: controller.Controller.Info:input_type -> controller.Empty
+	2, // 6: controller.Controller.SetState:output_type -> controller.Result
+	1, // 7: controller.Controller.Ring:output_type -> controller.Empty
+	4, // 8: controller.Controller.Info:output_type -> controller.StateInfo
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_controller_controller_proto_init() }
@@ -187,7 +428,7 @@ func file_controller_controller_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_controller_controller_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Result); i {
+			switch v := v.(*Empty); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -199,7 +440,43 @@ func file_controller_controller_proto_init() {
 			}
 		}
 		file_controller_controller_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BellPushState); i {
+			switch v := v.(*Result); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_controller_controller_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ItemState); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_controller_controller_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StateInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_controller_controller_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*EnabledState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -216,13 +493,14 @@ func file_controller_controller_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_controller_controller_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_controller_controller_proto_goTypes,
 		DependencyIndexes: file_controller_controller_proto_depIdxs,
+		EnumInfos:         file_controller_controller_proto_enumTypes,
 		MessageInfos:      file_controller_controller_proto_msgTypes,
 	}.Build()
 	File_controller_controller_proto = out.File

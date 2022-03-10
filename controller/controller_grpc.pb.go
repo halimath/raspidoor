@@ -18,7 +18,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControllerClient interface {
-	SetBellPushState(ctx context.Context, in *BellPushState, opts ...grpc.CallOption) (*Result, error)
+	SetState(ctx context.Context, in *EnabledState, opts ...grpc.CallOption) (*Result, error)
+	Ring(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
+	Info(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StateInfo, error)
 }
 
 type controllerClient struct {
@@ -29,9 +31,27 @@ func NewControllerClient(cc grpc.ClientConnInterface) ControllerClient {
 	return &controllerClient{cc}
 }
 
-func (c *controllerClient) SetBellPushState(ctx context.Context, in *BellPushState, opts ...grpc.CallOption) (*Result, error) {
+func (c *controllerClient) SetState(ctx context.Context, in *EnabledState, opts ...grpc.CallOption) (*Result, error) {
 	out := new(Result)
-	err := c.cc.Invoke(ctx, "/controller.Controller/SetBellPushState", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/controller.Controller/SetState", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controllerClient) Ring(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/controller.Controller/Ring", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *controllerClient) Info(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StateInfo, error) {
+	out := new(StateInfo)
+	err := c.cc.Invoke(ctx, "/controller.Controller/Info", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +62,9 @@ func (c *controllerClient) SetBellPushState(ctx context.Context, in *BellPushSta
 // All implementations must embed UnimplementedControllerServer
 // for forward compatibility
 type ControllerServer interface {
-	SetBellPushState(context.Context, *BellPushState) (*Result, error)
+	SetState(context.Context, *EnabledState) (*Result, error)
+	Ring(context.Context, *Empty) (*Empty, error)
+	Info(context.Context, *Empty) (*StateInfo, error)
 	mustEmbedUnimplementedControllerServer()
 }
 
@@ -50,8 +72,14 @@ type ControllerServer interface {
 type UnimplementedControllerServer struct {
 }
 
-func (UnimplementedControllerServer) SetBellPushState(context.Context, *BellPushState) (*Result, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetBellPushState not implemented")
+func (UnimplementedControllerServer) SetState(context.Context, *EnabledState) (*Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetState not implemented")
+}
+func (UnimplementedControllerServer) Ring(context.Context, *Empty) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ring not implemented")
+}
+func (UnimplementedControllerServer) Info(context.Context, *Empty) (*StateInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Info not implemented")
 }
 func (UnimplementedControllerServer) mustEmbedUnimplementedControllerServer() {}
 
@@ -66,20 +94,56 @@ func RegisterControllerServer(s grpc.ServiceRegistrar, srv ControllerServer) {
 	s.RegisterService(&Controller_ServiceDesc, srv)
 }
 
-func _Controller_SetBellPushState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BellPushState)
+func _Controller_SetState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnabledState)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ControllerServer).SetBellPushState(ctx, in)
+		return srv.(ControllerServer).SetState(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/controller.Controller/SetBellPushState",
+		FullMethod: "/controller.Controller/SetState",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControllerServer).SetBellPushState(ctx, req.(*BellPushState))
+		return srv.(ControllerServer).SetState(ctx, req.(*EnabledState))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Controller_Ring_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControllerServer).Ring(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/controller.Controller/Ring",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControllerServer).Ring(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Controller_Info_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ControllerServer).Info(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/controller.Controller/Info",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ControllerServer).Info(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +156,16 @@ var Controller_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ControllerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SetBellPushState",
-			Handler:    _Controller_SetBellPushState_Handler,
+			MethodName: "SetState",
+			Handler:    _Controller_SetState_Handler,
+		},
+		{
+			MethodName: "Ring",
+			Handler:    _Controller_Ring_Handler,
+		},
+		{
+			MethodName: "Info",
+			Handler:    _Controller_Info_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

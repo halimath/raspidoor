@@ -3,6 +3,7 @@ package gatekeeper
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/halimath/raspidoor/internal/gpio"
@@ -10,63 +11,109 @@ import (
 	"github.com/halimath/raspidoor/logging"
 )
 
+const (
+	ItemInfoLabelExternalBell = "external bell"
+	ItemInfoLabelPhone        = "phone"
+)
+
 var (
 	ErrNoSuchBellPush = errors.New("no such bell push")
 )
 
-type SIPOptions struct {
-	Caller       sip.URI
-	Callee       sip.URI
-	RoundTripper sip.RoundTripper
-	AuthHandler  []sip.AuthenticationHandler
+type (
+	SIPOptions struct {
+		Caller       sip.URI
+		Callee       sip.URI
+		RoundTripper sip.RoundTripper
+		AuthHandler  []sip.AuthenticationHandler
+	}
+
+	GPIOOptions struct {
+		Chip string
+		GPIO int
+	}
+
+	GPIOOutputOptions struct {
+		GPIOOptions
+		Duration time.Duration
+	}
+
+	BellPushOptions struct {
+		GPIOOptions
+		Label string
+	}
+
+	Options struct {
+		SIP          SIPOptions
+		StatusLED    GPIOOutputOptions
+		ExternalBell GPIOOutputOptions
+		BellPushes   []BellPushOptions
+		DisableGPIO  bool
+	}
+
+	bellPush struct {
+		enabled bool
+		label   string
+		btn     *gpio.Button
+	}
+
+	externalBell struct {
+		enabled bool
+		dur     time.Duration
+		out     *gpio.OnOffOutput
+		logger  logging.Logger
+	}
+
+	phoneBell struct {
+		enabled      bool
+		caller       sip.URI
+		callee       sip.URI
+		roundTripper sip.RoundTripper
+		authHandler  []sip.AuthenticationHandler
+		logger       logging.Logger
+	}
+
+	ItemInfo struct {
+		Label   string
+		Enabled bool
+	}
+
+	Info struct {
+		BellPushes []ItemInfo
+		Bells      []ItemInfo
+	}
+
+	Gatekeeper struct {
+		opts Options
+
+		statusLED    *gpio.LED
+		externalBell externalBell
+		phoneBell    *phoneBell
+		bellPushes   []bellPush
+
+		logger logging.Logger
+
+		lock sync.RWMutex
+	}
+)
+
+func (e *externalBell) ring() {
+	if err := e.out.OnFor(e.dur); err != nil {
+		e.logger.Error("failed to ring external bell: %s", err)
+	}
 }
 
-type GPIOOptions struct {
-	Chip string
-	GPIO int
+func (p *phoneBell) Close() error {
+	return p.roundTripper.Close()
 }
 
-type GPIOOutputOptions struct {
-	GPIOOptions
-	Duration time.Duration
-}
-
-type BellPushOptions struct {
-	GPIOOptions
-	Label string
-}
-
-type Options struct {
-	SIP          SIPOptions
-	StatusLED    GPIOOutputOptions
-	ExternalBell GPIOOutputOptions
-	BellPushes   []BellPushOptions
-	DisableGPIO  bool
-}
-
-type bellPush struct {
-	enabled bool
-	label   string
-	btn     *gpio.Button
-}
-
-type externalBell struct {
-	enabled bool
-	out     *gpio.OnOffOutput
-}
-
-type Gatekeeper struct {
-	opts         Options
-	caller       sip.URI
-	callee       sip.URI
-	roundTripper sip.RoundTripper
-	authHandler  []sip.AuthenticationHandler
-
-	statusLED    *gpio.LED
-	externalBell externalBell
-	bellPushes   []bellPush
-
-	logger logging.Logger
+func (p *phoneBell) ring() {
+	go func() {
+		d := sip.NewDialog(p.roundTripper, p.caller, p.authHandler...)
+		if err := d.Ring(p.callee); err != nil {
+			p.logger.Error("failed to ring SIP phone: %s", err)
+		}
+	}()
 }
 
 func New(opts Options, logger logging.Logger) (*Gatekeeper, error) {
@@ -89,14 +136,22 @@ func New(opts Options, logger logging.Logger) (*Gatekeeper, error) {
 	g := &Gatekeeper{
 		opts: opts,
 
-		caller:       opts.SIP.Caller,
-		callee:       opts.SIP.Callee,
-		roundTripper: opts.SIP.RoundTripper,
-		authHandler:  opts.SIP.AuthHandler,
-		statusLED:    led,
+		statusLED: led,
+
+		phoneBell: &phoneBell{
+			enabled:      true,
+			caller:       opts.SIP.Caller,
+			callee:       opts.SIP.Callee,
+			roundTripper: opts.SIP.RoundTripper,
+			authHandler:  opts.SIP.AuthHandler,
+			logger:       logger,
+		},
+
 		externalBell: externalBell{
 			enabled: true,
+			dur:     opts.ExternalBell.Duration,
 			out:     extlBell,
+			logger:  logger,
 		},
 
 		logger: logger,
@@ -140,6 +195,9 @@ func New(opts Options, logger logging.Logger) (*Gatekeeper, error) {
 }
 
 func (g *Gatekeeper) Start() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	g.logger.Info("Starting gatekeeper")
 	if !g.opts.DisableGPIO {
 		g.statusLED.On()
@@ -147,6 +205,9 @@ func (g *Gatekeeper) Start() {
 }
 
 func (g *Gatekeeper) Close() error {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	g.logger.Info("Shutting down gatekeeper")
 
 	if !g.opts.DisableGPIO {
@@ -162,7 +223,7 @@ func (g *Gatekeeper) Close() error {
 		}
 	}
 
-	if err := g.roundTripper.Close(); err != nil {
+	if err := g.phoneBell.Close(); err != nil {
 		return err
 	}
 
@@ -181,27 +242,28 @@ func (g *Gatekeeper) bellPushPressed(idx int) {
 }
 
 func (g *Gatekeeper) Ring() {
+	g.lock.RLock()
+	defer g.lock.RUnlock()
+
 	if !g.opts.DisableGPIO {
 		if err := g.statusLED.BlinkFor(g.opts.StatusLED.Duration, 100*time.Millisecond); err != nil {
 			g.logger.Error("failed to blink status led: %s", err)
 		}
 
 		if g.externalBell.enabled {
-			if err := g.externalBell.out.OnFor(g.opts.ExternalBell.Duration); err != nil {
-				g.logger.Error("failed to activate external bell: %s", err)
-			}
+			g.externalBell.ring()
 		}
 	}
 
-	go func() {
-		d := sip.NewDialog(g.roundTripper, g.caller, g.authHandler...)
-		if err := d.Ring(g.callee); err != nil {
-			g.logger.Error("failed to ring SIP phone: %s", err)
-		}
-	}()
+	if g.phoneBell.enabled {
+		g.phoneBell.ring()
+	}
 }
 
 func (g *Gatekeeper) SetBellPushState(index int, enabled bool) error {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	if index >= len(g.bellPushes) {
 		return fmt.Errorf("%w: %d", ErrNoSuchBellPush, index)
 	}
@@ -209,6 +271,48 @@ func (g *Gatekeeper) SetBellPushState(index int, enabled bool) error {
 	g.bellPushes[index].enabled = enabled
 
 	return nil
+}
+
+func (g *Gatekeeper) SetExternalBellState(enabled bool) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	g.externalBell.enabled = enabled
+}
+
+func (g *Gatekeeper) SetPhoneBellState(enabled bool) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	g.phoneBell.enabled = enabled
+}
+
+func (g *Gatekeeper) Info() Info {
+	g.lock.RLock()
+	defer g.lock.RUnlock()
+
+	i := Info{
+		Bells: []ItemInfo{
+			{
+				Label:   ItemInfoLabelExternalBell,
+				Enabled: g.externalBell.enabled,
+			},
+			{
+				Label:   ItemInfoLabelPhone,
+				Enabled: g.phoneBell.enabled,
+			},
+		},
+		BellPushes: make([]ItemInfo, len(g.bellPushes)),
+	}
+
+	for idx, p := range g.bellPushes {
+		i.BellPushes[idx] = ItemInfo{
+			Label:   p.label,
+			Enabled: p.enabled,
+		}
+	}
+
+	return i
 }
 
 func chip(o GPIOOptions) string {

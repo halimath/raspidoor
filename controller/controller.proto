@@ -5,15 +5,36 @@ option go_package = "github.com/halimath/raspidoor/controller";
 package controller;
 
 service Controller {
-    rpc SetBellPushState(BellPushState) returns (Result) {}
+    rpc SetState(EnabledState) returns (Result) {}
+    rpc Ring(Empty) returns (Empty) {}
+    rpc Info(Empty) returns (StateInfo) {}
 }
+
+message Empty {}
 
 message Result {
     bool ok = 1;
     string error = 2;
 }
 
-message BellPushState {
-    int32 index = 1;
+message ItemState {
+    string label = 1;
+    bool enabled = 2;
+}
+
+message StateInfo {
+    repeated ItemState bellPushes = 1;
+    repeated ItemState bells = 2;
+}
+
+message EnabledState {
+    Target target = 1;
     bool state = 2;
+    int32 index = 3;
+}
+
+enum Target {
+    BELL_PUSH = 0;
+    EXTERNAL_BELL = 1;
+    PHONE = 2;
 }
