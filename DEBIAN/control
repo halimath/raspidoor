@@ -1,0 +1,5 @@
+Package: raspidoor
+Version: VERSION
+Architecture: ARCH
+Maintainer: Alexander Metzner <alexander.metzner@gmail.com>
+Description: A door bell manager for your raspberry pi.

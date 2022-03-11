@@ -6,7 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=notify
-ExecStart=/opt/raspidoor/raspidoord
+ExecStart=/usr/bin/raspidoord
 PIDFile=/run/raspidoord.pid
 ExecStop=/bin/kill -s QUIT $MAINPID
 
