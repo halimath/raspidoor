@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/halimath/raspidoor/logging"
+	"github.com/halimath/raspidoor/daemon/internal/logging"
 )
 
 type Notification int

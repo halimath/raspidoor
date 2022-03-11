@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/halimath/raspidoor/internal/config"
-	"github.com/halimath/raspidoor/internal/controller"
-	"github.com/halimath/raspidoor/internal/gatekeeper"
-	"github.com/halimath/raspidoor/internal/systemd"
+	"github.com/halimath/raspidoor/daemon/internal/config"
+	"github.com/halimath/raspidoor/daemon/internal/controller"
+	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
+	"github.com/halimath/raspidoor/daemon/internal/systemd"
 )
 
 var (

@@ -15,6 +15,10 @@ import (
 )
 
 var (
+	Version        = "0.1.0"
+	Revision       = "local"
+	BuildTimestamp = "0000-00-00T00:00:00"
+
 	socket  *string
 	rootCmd *cobra.Command
 )
@@ -33,6 +37,14 @@ func init() {
 	}
 
 	socket = rootCmd.PersistentFlags().StringP("socket", "s", "/var/run/raspidoor.socket", "Path of the unix socket to connect to the daemon")
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Show version of raspidoor",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("raspidoor cli v%s built %s (%s)\n", Version, BuildTimestamp, Revision)
+		},
+	})
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "bellpush",

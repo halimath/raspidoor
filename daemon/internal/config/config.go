@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/halimath/raspidoor/internal/gatekeeper"
-	"github.com/halimath/raspidoor/internal/gpio"
-	"github.com/halimath/raspidoor/internal/sip"
-	"github.com/halimath/raspidoor/logging"
+	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
+	"github.com/halimath/raspidoor/daemon/internal/gpio"
+	"github.com/halimath/raspidoor/daemon/internal/logging"
+	"github.com/halimath/raspidoor/daemon/internal/sip"
 	"gopkg.in/yaml.v2"
 )
 

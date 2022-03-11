@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/halimath/raspidoor/controller"
-	"github.com/halimath/raspidoor/internal/gatekeeper"
-	"github.com/halimath/raspidoor/logging"
+	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
+	"github.com/halimath/raspidoor/daemon/internal/logging"
 	"google.golang.org/grpc"
 )
 

@@ -2,42 +2,42 @@ VERSION := 0.1.0
 BUILD_TIMESTAMP := $(shell date --utc --iso-8601=seconds)
 REVISION := $(shell git rev-parse HEAD)
 
-GO := go
-GOOS := linux 
+GO ?= go
+GOOS ?= linux 
 # GOARCH := arm64
-GOARCH := arm
-GOARM := 5
+GOARCH ?= arm
+GOARM ?= 5
 
-TARGET_DEV_HOST := raspberrypi
-TARGET_DEV_USER := pi
-TARGET_DEV_DIR := ~/raspidoor
+TARGET_DEV_HOST ?= raspberrypi
+TARGET_DEV_USER ?= pi
+TARGET_DEV_DIR ?= ~/raspidoor
 
-TARGET_PROD_HOST := klingel
-TARGET_PROD_USER := root
-TARGET_PROD_DIR := /opt/raspidoor
-TARGET_PROD_CONFIG_DIR := /etc/raspidoor
+TARGET_PROD_HOST ?= klingel
+TARGET_PROD_USER ?= root
+TARGET_PROD_DIR ?= /opt/raspidoor
+TARGET_PROD_CONFIG_DIR ?= /etc/raspidoor
 
-SSH := ssh
-SSH_OPTS := 
+SSH ?= ssh
+SSH_OPTS ?= 
 
-SCP := scp
-SCP_OPTS := 
+SCP ?= scp
+SCP_OPTS ?= 
 
-RSYNC := rsync
-RSYNC_OPTS := -avz
+RSYNC ?= rsync
+RSYNC_OPTS ?= -avz
 
-PROTOC := protoc
+PROTOC ?= protoc
 
-RM := rm
-RM_OPTS := -rf
+RM ?= rm
+RM_OPTS ?= -rf
 
-.PHONY: raspidoord.$(GOARCH) clean install install-dev install-prod
+.PHONY: raspidoord raspidoor clean install install-dev install-prod
 
-raspidoord.$(GOARCH):
-	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -ldflags '-X main.Version=$(VERSION) -X main.Revision=$(REVISION) -X main.BuildTimestamp=$(BUILD_TIMESTAMP)' -o $@ cmd/raspidoord/main.go
+raspidoord:
+	cd daemon && env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -ldflags '-X main.Version=$(VERSION) -X main.Revision=$(REVISION) -X main.BuildTimestamp=$(BUILD_TIMESTAMP)' -o ../$@ .
 
-raspidoor.$(GOARCH):
-	env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -o $@ cmd/raspidoor/main.go
+raspidoor:
+	cd cli && env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -ldflags '-X main.Version=$(VERSION) -X main.Revision=$(REVISION) -X main.BuildTimestamp=$(BUILD_TIMESTAMP)' -o ../$@ .
 
 controller/controller.pb.go: controller/controller.proto
 	$(PROTOC) --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $<
