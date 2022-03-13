@@ -8,8 +8,8 @@ import (
 
 	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
 	"github.com/halimath/raspidoor/daemon/internal/gpio"
-	"github.com/halimath/raspidoor/daemon/internal/logging"
 	"github.com/halimath/raspidoor/daemon/internal/sip"
+	"github.com/halimath/raspidoor/systemd/logging"
 	"gopkg.in/yaml.v2"
 )
 
@@ -98,12 +98,14 @@ type (
 
 func (c Config) NewLogger() (logging.Logger, error) {
 	if c.Logging.Target == "syslog" {
-		return logging.Syslog()
+		return logging.Syslog("raspidoord")
 	}
 	return logging.Stdout(), nil
 }
 
 func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
+	var err error
+
 	caller, err := sip.ParseURI(c.SIP.Caller)
 	if err != nil {
 		return gatekeeper.Options{}, err
@@ -114,45 +116,57 @@ func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 		return gatekeeper.Options{}, err
 	}
 
-	bellPushes := make([]gatekeeper.BellPushOptions, len(c.BellPushes))
-	for i, p := range c.BellPushes {
-		bellPushes[i] = gatekeeper.BellPushOptions{
-			GPIOOptions: gatekeeper.GPIOOptions{
-				Chip: gpio.DefaultChip,
-				GPIO: p.GPIO,
-			},
-			Label: p.Label,
-		}
-	}
-
 	transport := sip.NewTCPTransport()
 	if c.SIP.Server.Debug {
 		transport.DumpRoundTrips = true
 	}
 
+	bellPushes := make([]gatekeeper.BellPushOptions, len(c.BellPushes))
+	for i, p := range c.BellPushes {
+		var input gpio.DigitalInput
+		if c.DisableGPIO {
+			input = gpio.NewNOOPDigitalInput()
+		} else {
+			input, err = gpio.NewPushButton(gpio.DefaultChip, p.GPIO, gpio.TypePullUp)
+			if err != nil {
+				return gatekeeper.Options{}, err
+			}
+		}
+
+		bellPushes[i] = gatekeeper.BellPushOptions{
+			Label: p.Label,
+			Input: input,
+		}
+	}
+
+	var led gpio.DigitalOutput
+	if c.DisableGPIO {
+		led = gpio.NewNOOPDigitalOutput()
+	} else {
+		led, err = gpio.NewDigitalOutput(gpio.DefaultChip, c.StatusLED.GPIO)
+		if err != nil {
+			return gatekeeper.Options{}, err
+		}
+	}
+
+	var externalBell gpio.DigitalOutput
+	if c.DisableGPIO {
+		externalBell = gpio.NewNOOPDigitalOutput()
+	} else {
+		externalBell, err = gpio.NewDigitalOutput(gpio.DefaultChip, c.ExternalBell.GPIO)
+		if err != nil {
+			return gatekeeper.Options{}, err
+		}
+	}
+
 	return gatekeeper.Options{
-		SIP: gatekeeper.SIPOptions{
-			Caller:       caller,
-			Callee:       callee,
-			RoundTripper: transport,
-			AuthHandler:  []sip.AuthenticationHandler{sip.NewDigestHandler(c.SIP.Server.User, c.SIP.Server.Password)},
-		},
-		StatusLED: gatekeeper.GPIOOutputOptions{
-			GPIOOptions: gatekeeper.GPIOOptions{
-				Chip: gpio.DefaultChip,
-				GPIO: c.StatusLED.GPIO,
-			},
-			Duration: c.StatusLED.BlinkDuration,
-		},
-		ExternalBell: gatekeeper.GPIOOutputOptions{
-			GPIOOptions: gatekeeper.GPIOOptions{
-				Chip: gpio.DefaultChip,
-				GPIO: c.ExternalBell.GPIO,
-			},
-			Duration: c.ExternalBell.RingDuration,
-		},
+		StatusLED:   led,
+		LEDDuration: c.StatusLED.BlinkDuration,
 		BellPushes:  bellPushes,
-		DisableGPIO: c.DisableGPIO,
+		Bells: []gatekeeper.BellOptions{
+			gatekeeper.NewExternalBell("External Bell", externalBell, c.ExternalBell.RingDuration),
+			gatekeeper.NewPhoneBell("SIP Phone", caller, callee, transport, []sip.AuthenticationHandler{sip.NewDigestHandler(c.SIP.Server.User, c.SIP.Server.Password)}),
+		},
 	}, nil
 }
 

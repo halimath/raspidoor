@@ -83,19 +83,26 @@ func init() {
 	})
 
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "externalbell",
-		Short: "Enable/Disable the external bell",
-		Args:  cobra.ExactArgs(1),
+		Use:   "bell",
+		Short: "Enable/Disable a bell",
+		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			state, err := parseEnabled(args[0])
+			idx, err := strconv.ParseInt(args[0], 10, 32)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s: Invalid state: %s: %s\n", os.Args[0], args[0], err)
+				fmt.Fprintf(os.Stderr, "%s: Invalid bell push index: %s: %s\n", os.Args[0], args[0], err)
+				os.Exit(3)
+			}
+
+			state, err := parseEnabled(args[1])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s: Invalid state: %s: %s\n", os.Args[0], args[1], err)
 				os.Exit(3)
 			}
 
 			doWithController(func(ctx context.Context, ctrl controller.ControllerClient) error {
 				r, err := ctrl.SetState(ctx, &controller.EnabledState{
-					Target: controller.Target_EXTERNAL_BELL,
+					Target: controller.Target_BELL,
+					Index:  int32(idx),
 					State:  state,
 				})
 
@@ -104,37 +111,7 @@ func init() {
 				}
 
 				if !r.Ok {
-					fmt.Fprintf(os.Stderr, "%s: Failed to set external bell state: %s\n", os.Args[0], r.Error)
-				}
-
-				return nil
-			})
-		},
-	})
-
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "phone",
-		Short: "Enable/Disable the phone bell",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			state, err := parseEnabled(args[0])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s: Invalid state: %s: %s\n", os.Args[0], args[0], err)
-				os.Exit(3)
-			}
-
-			doWithController(func(ctx context.Context, ctrl controller.ControllerClient) error {
-				r, err := ctrl.SetState(ctx, &controller.EnabledState{
-					Target: controller.Target_PHONE,
-					State:  state,
-				})
-
-				if err != nil {
-					return err
-				}
-
-				if !r.Ok {
-					fmt.Fprintf(os.Stderr, "%s: Failed to set phone state: %s\n", os.Args[0], r.Error)
+					fmt.Fprintf(os.Stderr, "%s: Failed to set bell state: %s\n", os.Args[0], r.Error)
 				}
 
 				return nil

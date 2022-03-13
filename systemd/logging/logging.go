@@ -44,8 +44,8 @@ func (l *writerLogger) Close() error {
 	return nil
 }
 
-func Syslog() (Logger, error) {
-	w, err := syslog.New(syslog.LOG_INFO, "raspidoor")
+func Syslog(tag string) (Logger, error) {
+	w, err := syslog.New(syslog.LOG_INFO, tag)
 	if err != nil {
 		return nil, err
 	}

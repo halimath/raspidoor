@@ -1,11 +1,11 @@
-package systemd
+package notify
 
 import (
 	"fmt"
 	"net"
 	"os"
 
-	"github.com/halimath/raspidoor/daemon/internal/logging"
+	"github.com/halimath/raspidoor/systemd/logging"
 )
 
 type Notification int
@@ -36,7 +36,7 @@ type Notifier interface {
 	Notify(Notification) error
 }
 
-func DetectNotifier(l logging.Logger) Notifier {
+func Detect(l logging.Logger) Notifier {
 	s, ok := os.LookupEnv("NOTIFY_SOCKET")
 	if !ok {
 		l.Info("EnvVar NOTIFY_SOCKET not found")

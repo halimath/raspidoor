@@ -19,18 +19,16 @@ const (
 	TypePullDown
 )
 
-type Button struct {
+type pushButton struct {
 	line      *gpiod.Line
 	pullType  PullType
-	callbacks []ButtonCallback
+	callbacks []DigitalInputCallback
 }
 
-type ButtonCallback func(pressed bool)
-
-func NewButton(chip string, gpioNumber int, pullType PullType) (*Button, error) {
-	b := &Button{
+func NewPushButton(chip string, gpioNumber int, pullType PullType) (DigitalInput, error) {
+	b := &pushButton{
 		pullType:  pullType,
-		callbacks: make([]ButtonCallback, 0, 5),
+		callbacks: make([]DigitalInputCallback, 0, 5),
 	}
 
 	line, err := gpiod.RequestLine(chip, gpioNumber, gpiod.WithEventHandler(b.handleEvent), gpiod.WithDebounce(200*time.Millisecond), gpiod.WithBothEdges)
@@ -43,7 +41,7 @@ func NewButton(chip string, gpioNumber int, pullType PullType) (*Button, error) 
 	return b, nil
 }
 
-func (b *Button) handleEvent(evt gpiod.LineEvent) {
+func (b *pushButton) handleEvent(evt gpiod.LineEvent) {
 	var pressed bool
 
 	if b.pullType == TypePullUp {
@@ -57,10 +55,10 @@ func (b *Button) handleEvent(evt gpiod.LineEvent) {
 	}
 }
 
-func (b *Button) AddCallback(cb ButtonCallback) {
+func (b *pushButton) AddCallback(cb DigitalInputCallback) {
 	b.callbacks = append(b.callbacks, cb)
 }
 
-func (b *Button) Close() error {
+func (b *pushButton) Close() error {
 	return b.line.Close()
 }

@@ -1,0 +1,76 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Raspidoor</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/tailwind.min.css">
+</head>
+
+<body class="flex flex-col justify-between h-screen">
+    <header class="bg-pink-900 text-white w-screen h-14 flex justify-between items-center px-4">
+        <div class="mx-2 text-lg">Raspidoor</div>
+    </header>
+
+    <main class="flex-grow md:bg-gray-100">
+        <div
+            class="flex flex-col bg-white mt-2 md:container md:mx-auto md:max-w-xl md:border-2 border-gray-300 md:rounded md:shadow">
+
+            <h2 class="font-bold px-4 py-2">Bells</h2>
+
+            {{ range $idx, $item := .Bells }}
+            <div class="flex justify-between items-center border-t-2 border-gray-200 px-4 py-2">
+                <label for="bell-{{$idx}}">{{.Label}}</label>
+                <input type="checkbox" id="bell-{{$idx}}" {{ if .Enabled }}checked{{ end }}>
+            </div>
+            {{ end }}
+
+            <h2 class="font-bold border-gray-200 px-4 py-2 pt-6">Bell Pushes</h2>
+
+            {{ range $idx, $item := .BellPushes }}
+            <div class="flex justify-between items-center border-t-2 border-gray-200 px-4 py-2">
+                <label for="bellpush-{{ $idx }}">{{.Label}}</label>
+                <input type="checkbox" id="bellpush-{{ $idx }}" {{ if .Enabled }}checked{{ end }}>
+            </div>
+
+            {{ end }}
+        </div>
+    </main>
+
+    <footer class="flex justify-center items-center px-4 text-xs bg-pink-700 text-white h-14 flex-grow-0">
+        <div>
+            <a href="https://github.com/halimath/raspidoor">github.com/halimath/raspidoor</a>
+            v0.1.0
+        </div>
+    </footer>
+
+    <form action="/update" method="POST">
+        <input type="hidden" name="target" value="">
+        <input type="hidden" name="state" value="">
+        <input type="hidden" name="index" value="">
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const form = document.forms[0];
+
+            document.querySelectorAll("input[type='checkbox']").forEach(cb => {
+                cb.addEventListener("change", evt => {
+                    const [target, index] = evt.target.id.split("-");
+                    const state = evt.target.checked;
+
+                    form.target.value = target;
+                    form.index.value = index;
+                    form.state.value = state;
+                    form.submit();
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

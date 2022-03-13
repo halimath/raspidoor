@@ -1,0 +1,13 @@
+---
+# Defines the TCP address to listen for HTTP connections
+address: ":80"
+
+# Defines the path of the Unix socket to listen on for controller commands.
+socket: /var/run/raspidoor.socket
+
+logging:
+  # target defines where to write logs: stdout or syslog
+  target: syslog
+
+  # Whether to output debugging information (i.e. SIP protocol dumps)
+  debug: false

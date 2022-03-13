@@ -8,7 +8,7 @@ import (
 
 	"github.com/halimath/raspidoor/controller"
 	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
-	"github.com/halimath/raspidoor/daemon/internal/logging"
+	"github.com/halimath/raspidoor/systemd/logging"
 	"google.golang.org/grpc"
 )
 
@@ -31,13 +31,10 @@ func (c *Controller) SetState(ctx context.Context, msg *controller.EnabledState)
 		return ok()
 	}
 
-	if msg.Target == controller.Target_EXTERNAL_BELL {
-		c.gatekeeper.SetExternalBellState(msg.State)
-		return ok()
-	}
-
-	if msg.Target == controller.Target_PHONE {
-		c.gatekeeper.SetPhoneBellState(msg.State)
+	if msg.Target == controller.Target_BELL {
+		if err := c.gatekeeper.SetBellState(int(msg.Index), msg.State); err != nil {
+			return failed(err.Error())
+		}
 		return ok()
 	}
 

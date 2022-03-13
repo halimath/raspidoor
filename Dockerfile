@@ -16,9 +16,11 @@ RUN apt-get install -y m4
 WORKDIR /src
 
 COPY .git/ ./.git/
+COPY systemd/ ./systemd/
 COPY controller/ ./controller/
 COPY cli/ ./cli/
 COPY daemon/ ./daemon/
+COPY webapp/ ./webapp/
 COPY DEBIAN/ ./DEBIAN/
 COPY go.work .
 COPY Makefile .

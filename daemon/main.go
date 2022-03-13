@@ -10,7 +10,7 @@ import (
 	"github.com/halimath/raspidoor/daemon/internal/config"
 	"github.com/halimath/raspidoor/daemon/internal/controller"
 	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
-	"github.com/halimath/raspidoor/daemon/internal/systemd"
+	"github.com/halimath/raspidoor/systemd/notify"
 )
 
 var (
@@ -50,7 +50,7 @@ func doMain() error {
 		return err
 	}
 
-	notifier := systemd.DetectNotifier(logger)
+	notifier := notify.Detect(logger)
 
 	g, err := gatekeeper.New(gc, logger)
 	if err != nil {
@@ -65,7 +65,7 @@ func doMain() error {
 	defer ctrl.Close()
 
 	g.Start()
-	if err := notifier.Notify(systemd.NotificationReady); err != nil {
+	if err := notifier.Notify(notify.NotificationReady); err != nil {
 		logger.Err(err)
 	}
 
@@ -73,7 +73,7 @@ func doMain() error {
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	<-signalChan
 
-	if err := notifier.Notify(systemd.NotificationStopping); err != nil {
+	if err := notifier.Notify(notify.NotificationStopping); err != nil {
 		logger.Err(err)
 	}
 

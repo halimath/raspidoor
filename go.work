@@ -1,7 +1,9 @@
 go 1.18
 
 use (
+	./systemd
 	./controller
 	./daemon
 	./cli
+	./webapp
 )

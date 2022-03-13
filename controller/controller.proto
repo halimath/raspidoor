@@ -35,6 +35,5 @@ message EnabledState {
 
 enum Target {
     BELL_PUSH = 0;
-    EXTERNAL_BELL = 1;
-    PHONE = 2;
+    BELL = 1;
 }

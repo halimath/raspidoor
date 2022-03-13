@@ -8,95 +8,66 @@ import (
 	"github.com/warthog618/gpiod"
 )
 
-type OnOffOutput struct {
+type digitalOutput struct {
 	line  *gpiod.Line
 	lock  sync.RWMutex
 	state bool
 }
 
-func NewOnOffOutput(chip string, gpioNumber int) (*OnOffOutput, error) {
+func NewDigitalOutput(chip string, gpioNumber int) (DigitalOutput, error) {
 	line, err := gpiod.RequestLine(chip, gpioNumber, gpiod.AsOutput(0))
 	if err != nil {
 		return nil, err
 	}
 
-	return &OnOffOutput{
+	return &digitalOutput{
 		line:  line,
 		state: false,
 	}, nil
 }
 
-func (o *OnOffOutput) State() bool {
-	o.lock.RLock()
-	defer o.lock.RUnlock()
+func (d *digitalOutput) State() bool {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
 
-	return o.state
+	return d.state
 }
 
-func (o *OnOffOutput) Close() error {
-	o.lock.Lock()
-	defer o.lock.Unlock()
+func (d *digitalOutput) Close() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 
-	return o.line.Close()
+	return d.line.Close()
 }
 
-func (o *OnOffOutput) On() error {
-	o.lock.Lock()
-	defer o.lock.Unlock()
+func (d *digitalOutput) On() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 
-	o.state = true
-	return o.line.SetValue(1)
+	d.state = true
+	return d.line.SetValue(1)
 }
 
-func (o *OnOffOutput) OnFor(dur time.Duration) error {
-	timer := time.NewTimer(dur)
+func (d *digitalOutput) Off() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 
-	go func() {
-		defer timer.Stop()
-		<-timer.C
-		o.Off()
-	}()
-
-	return o.On()
-}
-
-func (o *OnOffOutput) Off() error {
-	o.lock.Lock()
-	defer o.lock.Unlock()
-
-	o.state = false
-	return o.line.SetValue(0)
-}
-
-func (o *OnOffOutput) Toggle() error {
-	o.lock.Lock()
-	defer o.lock.Unlock()
-
-	if o.state {
-		o.state = false
-		return o.line.SetValue(0)
-	}
-
-	o.state = true
-	return o.line.SetValue(1)
+	d.state = false
+	return d.line.SetValue(0)
 }
 
 var ErrAlreadyBlinking = errors.New("already blinking")
 
 type LED struct {
-	*OnOffOutput
+	DigitalOutput
 	lock sync.Mutex
 	line *gpiod.Line
 }
 
-func NewLED(chip string, gpioNumber int) (*LED, error) {
-	output, err := NewOnOffOutput(chip, gpioNumber)
-	if err != nil {
-		return nil, err
-	}
+func NewLED(o DigitalOutput) *LED {
 	return &LED{
-		OnOffOutput: output,
-	}, nil
+		DigitalOutput: o,
+	}
 }
 
 func (l *LED) Blink(duration time.Duration) (chan<- struct{}, error) {
@@ -107,7 +78,7 @@ func (l *LED) Blink(duration time.Duration) (chan<- struct{}, error) {
 
 	stopChan := make(chan struct{})
 
-	s := l.state
+	s := l.State()
 
 	go func() {
 		defer ticker.Stop()
@@ -124,7 +95,7 @@ func (l *LED) Blink(duration time.Duration) (chan<- struct{}, error) {
 				return
 
 			case <-ticker.C:
-				l.Toggle()
+				Toggle(l)
 			}
 		}
 	}()
