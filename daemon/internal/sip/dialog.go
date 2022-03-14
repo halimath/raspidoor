@@ -33,7 +33,7 @@ const StatusDecline = 603
 func (d *Dialog) Ring(callee URI) error {
 	d.newCall()
 
-	res, err := d.sendRequest("INVITE", callee)
+	res, err := d.sendRequest("INVITE", callee, true)
 
 	if err != nil {
 		return err
@@ -44,8 +44,10 @@ func (d *Dialog) Ring(callee URI) error {
 	}
 
 	if res.StatusCode == http.StatusOK {
-		// TODO: How to end the call correctly?
-		res, err = d.sendRequest("BYE", callee)
+		res, err = d.sendRequest("ACK", callee, false)
+
+		// TODO: Send ACK with same CSeq
+		res, err = d.sendRequest("BYE", callee, true)
 		if err != nil {
 			return err
 		}
@@ -57,24 +59,24 @@ func (d *Dialog) Ring(callee URI) error {
 	return fmt.Errorf("unexpected status code: %d", res.StatusCode)
 }
 
-func (d *Dialog) sendRequest(method string, callee URI) (*Response, error) {
+func (d *Dialog) sendRequest(method string, callee URI, incrementCSeq bool) (*Response, error) {
 	req := NewRequest(method, callee)
 	req.Header.Set("From", d.caller.String())
 	req.Header.Set("To", callee.String())
 	req.Header.Set("Contact", d.caller.String())
 	req.Header.Set("Max-Forwards", "70")
 
-	return d.exchange(req)
+	return d.exchange(req, incrementCSeq)
 }
 
-func (d *Dialog) exchange(req *Request) (*Response, error) {
-	res, err := d.roundTrip(req)
+func (d *Dialog) exchange(req *Request, incrementCSeq bool) (*Response, error) {
+	res, err := d.roundTrip(req, incrementCSeq)
 	if err != nil {
 		return nil, err
 	}
 
 	if res.StatusCode == http.StatusUnauthorized {
-		c, err := parseWWWAuthenticateHeader(res.Header.GetFirst("WWW-Authenticate"))
+		c, err := parseWWWAuthenticateHeader(res.Header.Get("WWW-Authenticate"))
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +85,7 @@ func (d *Dialog) exchange(req *Request) (*Response, error) {
 			return nil, err
 		}
 
-		res, err = d.roundTrip(req)
+		res, err = d.roundTrip(req, true)
 	}
 
 	return res, nil
@@ -106,8 +108,10 @@ func (d *Dialog) authenticate(req *Request, c AuthenticationChallenge) error {
 	return ErrUnsolveableAuthenticationChallenge
 }
 
-func (d *Dialog) roundTrip(req *Request) (*Response, error) {
-	d.cseq++
+func (d *Dialog) roundTrip(req *Request, incrementCSeq bool) (*Response, error) {
+	if incrementCSeq {
+		d.cseq++
+	}
 	req.Header.Set("Cseq", fmt.Sprintf("%d %s", d.cseq, req.Method))
 	req.Header.Set("Call-ID", d.callID)
 

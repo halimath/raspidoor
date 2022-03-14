@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/textproto"
 	"strconv"
 	"strings"
 )
@@ -85,21 +86,15 @@ func (h Header) Contains(key string) bool {
 }
 
 func (h Header) Set(key, value string) {
-	h[key] = []string{value}
+	textproto.MIMEHeader(h).Set(key, value)
 }
 
 func (h Header) Add(key, value string) {
-	vals := h[key]
-	vals = append(vals, value)
-	h[key] = vals
+	textproto.MIMEHeader(h).Add(key, value)
 }
 
-func (h Header) GetFirst(key string) string {
-	v, ok := h[key]
-	if !ok {
-		return ""
-	}
-	return v[0]
+func (h Header) Get(key string) string {
+	return textproto.MIMEHeader(h).Get(key)
 }
 
 func (h Header) ParseHeader(line string) error {
@@ -242,6 +237,56 @@ func ParseResponse(r io.Reader) (*Response, error) {
 
 	return res, nil
 }
+
+// func ParseResponse(r io.Reader) (*Response, error) {
+// 	br := bufio.NewReader(r)
+// 	pr := textproto.NewReader(br)
+
+// 	l, err := pr.ReadLine()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	protocol, statusCodeAsString, statusMessage, err := parseFirstResponseLine(l)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	statusCode, err := strconv.ParseInt(statusCodeAsString, 10, 32)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("%w: error parsing status code: %s", ErrParsingError, err)
+// 	}
+
+// 	res := &Response{
+// 		Protocol:      protocol,
+// 		StatusCode:    int(statusCode),
+// 		StatusMessage: statusMessage,
+// 		Header:        Header{},
+// 		Body:          nil,
+// 	}
+
+// 	for {
+// 		line, err := pr.ReadContinuedLine()
+// 		if err != nil {
+// 			if errors.Is(err, io.EOF) {
+// 				break
+// 			}
+// 			return nil, err
+// 		}
+
+// 		if len(strings.TrimSpace(line)) == 0 {
+// 			// End of body
+// 			// TODO: Parse body
+// 			break
+// 		}
+
+// 		if err := res.Header.ParseHeader(line); err != nil {
+// 			return nil, err
+// 		}
+// 	}
+
+// 	return res, nil
+// }
 
 func parseFirstResponseLine(l string) (protocol, statusCode, statusMessage string, err error) {
 	parts := strings.Split(l, " ")
