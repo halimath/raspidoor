@@ -7,94 +7,119 @@ import (
 	"time"
 )
 
+const StatusDecline = 603
+
 type Dialog struct {
-	roundTripper           RoundTripper
+	transport              Transport
 	caller                 URI
 	authenticationHandlers []AuthenticationHandler
 	cseq                   int
 	callID                 string
 }
 
-func NewDialog(roundTripper RoundTripper, caller URI, authenticationHandlers ...AuthenticationHandler) *Dialog {
+func NewDialog(transport Transport, caller URI, authenticationHandlers ...AuthenticationHandler) *Dialog {
 	return &Dialog{
-		roundTripper:           roundTripper,
+		transport:              transport,
 		caller:                 caller,
 		authenticationHandlers: authenticationHandlers,
+		cseq:                   1,
+		callID:                 fmt.Sprintf("c%d", time.Now().Unix()),
 	}
 }
 
-func (d *Dialog) newCall() {
-	d.cseq = 0
-	d.callID = fmt.Sprintf("c%d", time.Now().Unix())
-}
-
-const StatusDecline = 603
-
-func (d *Dialog) Ring(callee URI) error {
-	d.newCall()
-
-	res, err := d.sendRequest("INVITE", callee, true)
-
+func (d *Dialog) Ring(callee URI) (bool, error) {
+	inviteRequest := d.request("INVITE", callee)
+	con, err := d.transport.Send(inviteRequest)
 	if err != nil {
-		return err
+		return false, err
+	}
+	defer con.Close()
+
+	inviteResponse, err := RecvFinal(con)
+	if err != nil {
+		return false, err
 	}
 
-	if res.StatusCode == StatusDecline {
-		return nil
-	}
+	var authenticationChallenge AuthenticationChallenge
 
-	if res.StatusCode == http.StatusOK {
-		res, err = d.sendRequest("ACK", callee, false)
-
-		// TODO: Send ACK with same CSeq
-		res, err = d.sendRequest("BYE", callee, true)
+	if inviteResponse.StatusCode == http.StatusUnauthorized {
+		authenticationChallenge, err = parseWWWAuthenticateHeader(inviteResponse.Header.Get("WWW-Authenticate"))
 		if err != nil {
-			return err
+			return false, err
 		}
-		if res.StatusCode != http.StatusOK {
-			return fmt.Errorf("unexpected status code: %d", res.StatusCode)
+
+		if err := d.authenticate(inviteRequest, authenticationChallenge); err != nil {
+			return false, err
 		}
+
+		if err := con.Send(inviteRequest); err != nil {
+			return false, err
+		}
+		inviteResponse, err = RecvFinal(con)
 	}
 
-	return fmt.Errorf("unexpected status code: %d", res.StatusCode)
+	if inviteResponse.StatusCode == StatusDecline {
+		return false, nil
+	}
+
+	if inviteResponse.StatusCode == http.StatusOK {
+		to := inviteResponse.Header.Get("To")
+
+		ack := d.request("ACK", callee)
+		ack.SetBody("application/sdp", []byte(d.formatSDP()))
+		ack.Header.Set("To", to)
+
+		if authenticationChallenge.Method != "" {
+			err = d.authenticate(ack, authenticationChallenge)
+			if err != nil {
+				return false, err
+			}
+		}
+		if err := con.Send(ack); err != nil {
+			return false, err
+		}
+
+		d.cseq++
+
+		bye := d.request("BYE", callee)
+		bye.Header.Set("To", to)
+		if err := con.Send(bye); err != nil {
+			return false, err
+		}
+
+		return true, nil
+	}
+
+	return false, fmt.Errorf("unexpected status code: %d", inviteResponse.StatusCode)
 }
 
-func (d *Dialog) sendRequest(method string, callee URI, incrementCSeq bool) (*Response, error) {
+func (d *Dialog) formatSDP() string {
+	sessionId := time.Now().UnixMilli()
+	version := sessionId
+
+	addr := "fe80::b644:fe20:c499:dd4e"
+
+	return fmt.Sprintf("v=0\r\no=klingel1 %d %d IN IP6 %s\r\ns=\r\nc=IN IP6 %s\r\nt=0 0\r\n", sessionId, version, addr, addr)
+}
+
+func (d *Dialog) request(method string, callee URI) *Request {
 	req := NewRequest(method, callee)
 	req.Header.Set("From", d.caller.String())
 	req.Header.Set("To", callee.String())
 	req.Header.Set("Contact", d.caller.String())
 	req.Header.Set("Max-Forwards", "70")
+	req.Header.Set("Cseq", fmt.Sprintf("%d %s", d.cseq, req.Method))
+	req.Header.Set("Call-ID", d.callID)
 
-	return d.exchange(req, incrementCSeq)
-}
-
-func (d *Dialog) exchange(req *Request, incrementCSeq bool) (*Response, error) {
-	res, err := d.roundTrip(req, incrementCSeq)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode == http.StatusUnauthorized {
-		c, err := parseWWWAuthenticateHeader(res.Header.Get("WWW-Authenticate"))
-		if err != nil {
-			return nil, err
-		}
-
-		if err := d.authenticate(req, c); err != nil {
-			return nil, err
-		}
-
-		res, err = d.roundTrip(req, true)
-	}
-
-	return res, nil
+	return req
 }
 
 func (d *Dialog) authenticate(req *Request, c AuthenticationChallenge) error {
 	for _, h := range d.authenticationHandlers {
 		err := h.Solve(c, req)
 		if err == nil {
+			d.cseq++
+			req.Header.Set("Cseq", fmt.Sprintf("%d %s", d.cseq, req.Method))
 			return nil
 		}
 
@@ -106,14 +131,4 @@ func (d *Dialog) authenticate(req *Request, c AuthenticationChallenge) error {
 	}
 
 	return ErrUnsolveableAuthenticationChallenge
-}
-
-func (d *Dialog) roundTrip(req *Request, incrementCSeq bool) (*Response, error) {
-	if incrementCSeq {
-		d.cseq++
-	}
-	req.Header.Set("Cseq", fmt.Sprintf("%d %s", d.cseq, req.Method))
-	req.Header.Set("Call-ID", d.callID)
-
-	return d.roundTripper.RoundTrip(req)
 }
