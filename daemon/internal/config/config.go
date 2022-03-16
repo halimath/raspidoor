@@ -116,9 +116,8 @@ func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 		return gatekeeper.Options{}, err
 	}
 
-	transport := sip.NewTCPTransport()
-	if c.SIP.Server.Debug {
-		transport.DumpRoundTrips = true
+	transport := &sip.TCPTransport{
+		DumpRoundTrips: c.SIP.Server.Debug,
 	}
 
 	bellPushes := make([]gatekeeper.BellPushOptions, len(c.BellPushes))

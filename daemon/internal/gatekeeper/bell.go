@@ -20,10 +20,10 @@ type (
 	}
 
 	phoneBell struct {
-		caller       sip.URI
-		callee       sip.URI
-		roundTripper sip.RoundTripper
-		authHandler  []sip.AuthenticationHandler
+		caller      sip.URI
+		callee      sip.URI
+		transport   sip.Transport
+		authHandler []sip.AuthenticationHandler
 	}
 )
 
@@ -37,15 +37,15 @@ func (e *externalBell) Close() error { return e.out.Close() }
 
 func (p *phoneBell) Ring(logger logging.Logger) {
 	go func() {
-		d := sip.NewDialog(p.roundTripper, p.caller, p.authHandler...)
-		if err := d.Ring(p.callee); err != nil {
+		d := sip.NewDialog(p.transport, p.caller, p.authHandler...)
+		if _, err := d.Ring(p.callee); err != nil {
 			logger.Error("failed to ring SIP phone: %s", err)
 		}
 	}()
 }
 
 func (p *phoneBell) Close() error {
-	return p.roundTripper.Close()
+	return nil
 }
 
 func NewExternalBell(label string, out gpio.DigitalOutput, dur time.Duration) BellOptions {
@@ -61,16 +61,16 @@ func NewExternalBell(label string, out gpio.DigitalOutput, dur time.Duration) Be
 func NewPhoneBell(label string,
 	caller sip.URI,
 	callee sip.URI,
-	roundTripper sip.RoundTripper,
+	transport sip.Transport,
 	authHandler []sip.AuthenticationHandler,
 ) BellOptions {
 	return BellOptions{
 		Label: label,
 		Ringer: &phoneBell{
-			caller:       caller,
-			callee:       callee,
-			roundTripper: roundTripper,
-			authHandler:  authHandler,
+			caller:      caller,
+			callee:      callee,
+			transport:   transport,
+			authHandler: authHandler,
 		},
 	}
 }

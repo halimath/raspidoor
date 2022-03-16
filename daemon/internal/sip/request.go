@@ -5,142 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"net/textproto"
 	"strconv"
 	"strings"
 )
 
 var (
 	ErrParsingError = errors.New("error parsing response")
-	ErrInvaldURI    = errors.New("invalid uri")
 )
-
-type URI struct {
-	Scheme  string
-	Address string
-	Host    string
-	Port    int
-}
-
-func NewURI(scheme, address, host string, port int) URI {
-	return URI{
-		Scheme:  scheme,
-		Address: address,
-		Host:    host,
-		Port:    port,
-	}
-}
-
-func ParseURI(uri string) (URI, error) {
-	uri = strings.TrimSpace(uri)
-
-	p := strings.SplitN(uri, ":", 2)
-	if len(p) != 2 {
-		return URI{}, fmt.Errorf("%w: missing scheme", ErrInvaldURI)
-	}
-	if p[0] != "sip" {
-		return URI{}, fmt.Errorf("%w: missing scheme: %s", ErrInvaldURI, p[0])
-	}
-
-	scheme := p[0]
-
-	p = strings.Split(p[1], "@")
-	if len(p) != 2 {
-		return URI{}, fmt.Errorf("%w: missing host", ErrInvaldURI)
-	}
-
-	address := p[0]
-
-	p = strings.Split(p[1], ":")
-	var host string
-	var port int64
-	var err error
-	if len(p) == 1 {
-		host = p[0]
-		port = 5060
-	} else {
-		host = p[0]
-		port, err = strconv.ParseInt(p[1], 10, 32)
-		if err != nil {
-			return URI{}, fmt.Errorf("%w: invalid host: %s", ErrInvaldURI, err)
-		}
-	}
-
-	return URI{
-		Scheme:  scheme,
-		Address: address,
-		Host:    host,
-		Port:    int(port),
-	}, nil
-}
-
-func (u URI) String() string {
-	return fmt.Sprintf("%s:%s@%s:%d", u.Scheme, u.Address, u.Host, u.Port)
-}
-
-type Header map[string][]string
-
-func (h Header) Contains(key string) bool {
-	_, ok := h[key]
-	return ok
-}
-
-func (h Header) Set(key, value string) {
-	h[key] = []string{value}
-}
-
-func (h Header) Add(key, value string) {
-	vals := h[key]
-	vals = append(vals, value)
-	h[key] = vals
-}
-
-func (h Header) GetFirst(key string) string {
-	v, ok := h[key]
-	if !ok {
-		return ""
-	}
-	return v[0]
-}
-
-func (h Header) ParseHeader(line string) error {
-	parts := strings.Split(line, ":")
-	if len(parts) == 1 {
-		return fmt.Errorf("%w: invalid header line: %s", ErrParsingError, line)
-	}
-
-	key := strings.TrimSpace(parts[0])
-	val := strings.TrimSpace(strings.Join(parts[1:], ":"))
-
-	h.Add(key, val)
-
-	return nil
-}
-
-func (h Header) Write(w io.Writer) error {
-	for k, vals := range h {
-		for _, val := range vals {
-			if _, err := io.WriteString(w, k); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(w, ": "); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(w, val); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(w, "\r\n"); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (h Header) DebugString() string {
-	var b strings.Builder
-	h.Write(&b)
-	return b.String()
-}
 
 type Request struct {
 	Method string
@@ -158,6 +31,12 @@ func NewRequest(method string, uri URI) *Request {
 		URI:    uri,
 		Header: header,
 	}
+}
+
+func (r *Request) SetBody(contentType string, body []byte) {
+	r.Header.Set("Content-Type", contentType)
+	r.Header.Set("Content-Length", strconv.Itoa(len(body)))
+	r.Body = body
 }
 
 func (r *Request) Write(w io.Writer) error {
@@ -188,11 +67,12 @@ func (r *Request) DebugString() string {
 }
 
 type Response struct {
-	StatusCode    int
-	StatusMessage string
-	Protocol      string
-	Header        Header
-	Body          []byte
+	StatusCode            int
+	StatusMessage         string
+	Protocol              string
+	Header                Header
+	Body                  []byte
+	LocalAddr, RemoteAddr net.Addr
 }
 
 func (r *Response) DebugString() string {
@@ -200,17 +80,24 @@ func (r *Response) DebugString() string {
 	fmt.Fprintf(&b, "%s %d %s\n", r.Protocol, r.StatusCode, r.StatusMessage)
 	b.WriteString(r.Header.DebugString())
 	b.WriteRune('\n')
+
+	if len(r.Body) > 0 {
+		b.Write(r.Body)
+	}
+
 	return b.String()
 }
 
 func ParseResponse(r io.Reader) (*Response, error) {
-	scanner := bufio.NewScanner(r)
+	br := bufio.NewReader(r)
+	pr := textproto.NewReader(br)
 
-	if !scanner.Scan() {
-		return nil, fmt.Errorf("%w: empty reader", ErrParsingError)
+	l, err := pr.ReadLine()
+	if err != nil {
+		return nil, err
 	}
 
-	protocol, statusCodeAsString, statusMessage, err := parseFirstResponseLine(scanner.Text())
+	protocol, statusCodeAsString, statusMessage, err := parseFirstResponseLine(l)
 	if err != nil {
 		return nil, err
 	}
@@ -228,16 +115,40 @@ func ParseResponse(r io.Reader) (*Response, error) {
 		Body:          nil,
 	}
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := pr.ReadContinuedLine()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+
 		if len(strings.TrimSpace(line)) == 0 {
 			// End of body
-			// TODO
+			// TODO: Parse body
 			break
 		}
+
 		if err := res.Header.ParseHeader(line); err != nil {
 			return nil, err
 		}
+	}
+
+	var contentLength int
+
+	contentLengthHeader := res.Header.Get("Content-Length")
+	if contentLengthHeader != "" {
+		contentLength, err = strconv.Atoi(contentLengthHeader)
+	}
+
+	if contentLength > 0 {
+		body := make([]byte, contentLength)
+		_, err = io.ReadFull(br, body)
+		if err != nil {
+			return nil, err
+		}
+		res.Body = body
 	}
 
 	return res, nil
