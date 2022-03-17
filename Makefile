@@ -75,7 +75,7 @@ raspidoor_$(VERSION)-$(DEB_REVISION)_$(DEB_ARCH): raspidoor.$(GOARCH) raspidoord
 	$(M4) -DVERSION=$(VERSION) -DARCH=$(DEB_ARCH) DEBIAN/control > $@/DEBIAN/control
 
 docker-build-deb:
-	docker build --build-arg version=$(VERSION) --build-arg debrevision=$(DEB_REVISION) --build-arg goarch=$(GOARCH) --build-arg debarch=$(DEB_ARCH) -t raspidoor-builder:$(VERSION) .
+	docker build --build-arg version=$(VERSION) --build-arg debrevision=$(DEB_REVISION) -t raspidoor-builder:$(VERSION) .
 	$(MKDIR) $(MKDIR_OPTS) out
 	docker run --rm -it -v $(shell pwd)/out:/out raspidoor-builder:$(VERSION)
 
