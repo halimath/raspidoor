@@ -1,4 +1,4 @@
-FROM golang:1.18-rc-bullseye
+FROM golang:1.18-bullseye
 
 ARG version
 ARG debrevision
