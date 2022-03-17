@@ -43,7 +43,7 @@ func doMain() error {
 		return err
 	}
 
-	logger.Info("raspidoord/%s (+github.com/halimath/raspidoor, built %s, git %s)", Version, Revision, BuildTimestamp)
+	logger.Info("raspidoord/%s (+github.com/halimath/raspidoor, built %s, git %s)", Version, BuildTimestamp, Revision)
 
 	gc, err := c.GatekeeperOptions()
 	if err != nil {
