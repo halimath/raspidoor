@@ -3,6 +3,7 @@ package sip
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 type transportMock struct {
@@ -51,6 +52,7 @@ func TestDialog_Ring_decline(t *testing.T) {
 		resps: []*Response{
 			resp("SIP/2.0/TCP 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Digest nonce=\"1234\", realm=\"test.example.com\"\r\n"),
 			resp("SIP/2.0/TCP 603 Declined\r\nContent-Length: 0\r\n\r\n"),
+			resp("SIP/2.0/TCP 200 OK\r\nContent-Length: 0\r\n\r\n"),
 		},
 	}
 
@@ -64,7 +66,7 @@ func TestDialog_Ring_decline(t *testing.T) {
 	}
 
 	d := NewDialog(tm, caller, &authHandlerMock{})
-	accepted, err := d.Ring(callee)
+	accepted, err := d.Ring(callee, time.Second)
 
 	if err != nil {
 		t.Error(err)
@@ -81,6 +83,7 @@ func TestDialog_Ring_ringingThenOK(t *testing.T) {
 			resp("SIP/2.0/TCP 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Digest nonce=\"1234\", realm=\"test.example.com\"\r\n"),
 			resp("SIP/2.0/TCP 180 Ringing\r\nContent-Length: 0\r\n\r\n"),
 			resp("SIP/2.0/TCP 200 OK\r\nContent-Length: 0\r\n\r\n"),
+			resp("SIP/2.0/TCP 200 OK\r\nContent-Length: 0\r\n\r\n"),
 		},
 	}
 
@@ -94,7 +97,7 @@ func TestDialog_Ring_ringingThenOK(t *testing.T) {
 	}
 
 	d := NewDialog(tm, caller, &authHandlerMock{})
-	accepted, err := d.Ring(callee)
+	accepted, err := d.Ring(callee, time.Second)
 	if err != nil {
 		t.Error(err)
 	}

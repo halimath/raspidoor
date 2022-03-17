@@ -13,6 +13,7 @@ func TestReadConfig(t *testing.T) {
 sip:
   caller: "sip:caller@registrar.example.com"
   callee: "sip:callee@registrar.example.com"
+  maxRingingTime: 5s
   server:
     host: "registrar.example.com"
     port: 5060
@@ -39,8 +40,9 @@ logging:
 
 	if diff := deep.Equal(*config, Config{
 		SIP: SIP{
-			Caller: "sip:caller@registrar.example.com",
-			Callee: "sip:callee@registrar.example.com",
+			Caller:         "sip:caller@registrar.example.com",
+			Callee:         "sip:callee@registrar.example.com",
+			MaxRingingTime: 5 * time.Second,
 			Server: SIPServer{
 				Host:     "registrar.example.com",
 				Port:     5060,

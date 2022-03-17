@@ -2,8 +2,13 @@
 sip:
   # SIP address of the caller (i.e. the door bell)
   caller: "sip:klingel1@fritz.box"
+
   # SIP address of the callee (i.e. some internal phone number to ring)
   callee: "sip:**611@fritz.box"
+
+  # Max. duration to keep the phone ringing
+  maxRingingTime: 30s
+
   server:
     # The SIP host (your phone router)
     host: "fritz.box"

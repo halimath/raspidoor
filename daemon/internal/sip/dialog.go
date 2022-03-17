@@ -4,10 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-const StatusDecline = 603
+const (
+	StatusOK               = 200
+	StatusRequestCancelled = 487
+	StatusDecline          = 603
+)
 
 type Dialog struct {
 	transport              Transport
@@ -27,8 +32,8 @@ func NewDialog(transport Transport, caller URI, authenticationHandlers ...Authen
 	}
 }
 
-func (d *Dialog) Ring(callee URI) (bool, error) {
-	inviteRequest := d.request("INVITE", callee)
+func (d *Dialog) Ring(callee URI, maxRingingTime time.Duration) (bool, error) {
+	inviteRequest := d.invite(callee, maxRingingTime)
 	con, err := d.transport.Send(inviteRequest)
 	if err != nil {
 		return false, err
@@ -58,39 +63,58 @@ func (d *Dialog) Ring(callee URI) (bool, error) {
 		inviteResponse, err = RecvFinal(con)
 	}
 
-	if inviteResponse.StatusCode == StatusDecline {
-		return false, nil
+	accepted := inviteResponse.StatusCode == StatusOK
+
+	to := inviteResponse.Header.Get("To")
+
+	ack, err := d.ack(callee, to, authenticationChallenge)
+	if err != nil {
+		return false, err
 	}
 
-	if inviteResponse.StatusCode == http.StatusOK {
-		to := inviteResponse.Header.Get("To")
-
-		ack := d.request("ACK", callee)
-		ack.SetBody("application/sdp", []byte(d.formatSDP()))
-		ack.Header.Set("To", to)
-
-		if authenticationChallenge.Method != "" {
-			err = d.authenticate(ack, authenticationChallenge)
-			if err != nil {
-				return false, err
-			}
-		}
-		if err := con.Send(ack); err != nil {
-			return false, err
-		}
-
-		d.cseq++
-
-		bye := d.request("BYE", callee)
-		bye.Header.Set("To", to)
-		if err := con.Send(bye); err != nil {
-			return false, err
-		}
-
-		return true, nil
+	if err := con.Send(ack); err != nil {
+		return false, err
 	}
 
-	return false, fmt.Errorf("unexpected status code: %d", inviteResponse.StatusCode)
+	d.cseq++
+
+	bye := d.request("BYE", callee)
+	bye.Header.Set("To", to)
+	if err := con.Send(bye); err != nil {
+		return false, err
+	}
+
+	resp, err := RecvFinal(con)
+	if err != nil {
+		return false, err
+	}
+
+	if resp.StatusCode != StatusOK {
+		return false, fmt.Errorf("Got unexpected status from BYE: %d", resp.StatusCode)
+	}
+
+	return accepted, nil
+}
+
+func (d *Dialog) invite(callee URI, maxRingingTime time.Duration) *Request {
+	r := d.request("INVITE", callee)
+	r.Header.Add("Expires", strconv.Itoa(int(maxRingingTime.Seconds())))
+	return r
+}
+
+func (d *Dialog) ack(callee URI, to string, authenticationChallenge AuthenticationChallenge) (*Request, error) {
+	r := d.request("ACK", callee)
+	r.Header.Set("To", to)
+	r.SetBody("application/sdp", []byte(d.formatSDP()))
+
+	if authenticationChallenge.Method != "" {
+		err := d.authenticate(r, authenticationChallenge)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return r, nil
 }
 
 func (d *Dialog) formatSDP() string {
