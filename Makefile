@@ -1,4 +1,4 @@
-VERSION = 0.2.0
+VERSION = 0.2.1
 BUILD_TIMESTAMP := $(shell date --utc --iso-8601=seconds)
 REVISION := $(shell git rev-parse HEAD)
 
