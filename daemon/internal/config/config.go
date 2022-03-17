@@ -38,6 +38,9 @@ type (
 		// The callee's SIP address
 		Callee string `yaml:"callee"`
 
+		// Max duration to ring the users phone
+		MaxRingingTime time.Duration `yaml:"maxRingingTime"`
+
 		// Server settings
 		Server SIPServer `yaml:"server"`
 	}
@@ -164,7 +167,7 @@ func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 		BellPushes:  bellPushes,
 		Bells: []gatekeeper.BellOptions{
 			gatekeeper.NewExternalBell("External Bell", externalBell, c.ExternalBell.RingDuration),
-			gatekeeper.NewPhoneBell("SIP Phone", caller, callee, transport, []sip.AuthenticationHandler{sip.NewDigestHandler(c.SIP.Server.User, c.SIP.Server.Password)}),
+			gatekeeper.NewPhoneBell("SIP Phone", caller, callee, c.SIP.MaxRingingTime, transport, []sip.AuthenticationHandler{sip.NewDigestHandler(c.SIP.Server.User, c.SIP.Server.Password)}),
 		},
 	}, nil
 }
