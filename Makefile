@@ -37,7 +37,7 @@ M4 ?= m4
 CHMOD ?= chmod
 CHMOD_OPTS ?=
 
-.PHONY: clean install docker-build-deb
+.PHONY: clean mrproper install docker-build-deb
 
 raspidoord.$(GOARCH): $(DAEMON_SOURCES)
 	cd daemon && env GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GO) build -ldflags '-X main.Version=$(VERSION) -X main.Revision=$(REVISION) -X main.BuildTimestamp=$(BUILD_TIMESTAMP)' -o ../$@ .
@@ -80,4 +80,7 @@ docker-build-deb:
 	docker run --rm -it -v $(shell pwd)/out:/out raspidoor-builder:$(VERSION)
 
 clean:
-	$(RM) $(RM_OPTS) raspidoor.$(GOARCH)
+	$(RM) $(RM_OPTS) raspidoor.arm*
+
+mrproper: clean
+	$(RM) $(RM_OPTS) out
