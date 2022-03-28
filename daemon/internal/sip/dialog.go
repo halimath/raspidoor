@@ -61,6 +61,9 @@ func (d *Dialog) Ring(callee URI, maxRingingTime time.Duration) (bool, error) {
 			return false, err
 		}
 		inviteResponse, err = RecvFinal(con)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	accepted := inviteResponse.StatusCode == StatusOK

@@ -140,6 +140,9 @@ func ParseResponse(r io.Reader) (*Response, error) {
 	contentLengthHeader := res.Header.Get("Content-Length")
 	if contentLengthHeader != "" {
 		contentLength, err = strconv.Atoi(contentLengthHeader)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if contentLength > 0 {
