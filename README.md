@@ -127,7 +127,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [ci-img-url]: https://github.com/halimath/raspidoor/workflows/CI/badge.svg
-[go-report-card-img-url]: https://goreportcard.com/badge/github.com/halimath/raspidoor
-[go-report-card-url]: https://goreportcard.com/report/github.com/halimath/raspidoor
+[go-report-card-img-url]: https://goreportcard.com/badge/github.com/halimath/raspidoor/daemon
+[go-report-card-url]: https://goreportcard.com/report/github.com/halimath/raspidoor/daemon
 [release-img-url]: https://img.shields.io/github/v/release/halimath/raspidoor.svg
 [release-url]: https://github.com/halimath/raspidoor/releases
