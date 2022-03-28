@@ -3,10 +3,10 @@ module github.com/halimath/raspidoor/webapp
 go 1.18
 
 require (
+	github.com/halimath/appconf v0.0.0-20220327082622-fe7e06c8492d
 	github.com/halimath/raspidoor/controller v0.0.0
 	github.com/halimath/raspidoor/systemd v0.0.0
-	google.golang.org/grpc v1.42.0
-	gopkg.in/yaml.v2 v2.2.3
+	google.golang.org/grpc v1.45.0
 )
 
 replace (
@@ -15,10 +15,12 @@ replace (
 )
 
 require (
+	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
-	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
+	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
+	golang.org/x/sys v0.0.0-20220325203850-36772127a21f // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

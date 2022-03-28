@@ -18,7 +18,7 @@ var (
 	Revision       = "local"
 	BuildTimestamp = "0000-00-00T00:00:00"
 
-	configFile = flag.String("config-file", "/etc/raspidoor/raspidoord.yaml", "The config file to read")
+	configFile = flag.String("config-file", "", "The config file to read instead of the default configuration")
 )
 
 func main() {
@@ -33,7 +33,15 @@ func main() {
 func doMain() error {
 	flag.Parse()
 
-	c, err := config.ReadConfigFile(*configFile)
+	var c *config.Config
+	var err error
+
+	if *configFile == "" {
+		c, err = config.ReadConfig()
+	} else {
+		c, err = config.ReadConfigFromFile(*configFile)
+	}
+
 	if err != nil {
 		return err
 	}

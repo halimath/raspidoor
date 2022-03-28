@@ -1,0 +1,21 @@
+sip:
+  caller: "sip:caller@registrar.example.com"
+  callee: "sip:callee@registrar.example.com"
+  maxRingingTime: 5s
+  server:
+    host: "registrar.example.com"
+    port: 5060
+    user: caller
+    password: "password001"
+    debug: False
+statusLed:
+  gpio: 23
+  blinkDuration: 2s
+externalBell:
+  gpio: 25
+  ringDuration: 2s
+bellPushes:
+- label: Main door
+  gpio: 24
+logging:
+  debug: True

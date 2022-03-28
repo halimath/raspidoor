@@ -28,7 +28,7 @@ var (
 	Revision       = "local"
 	BuildTimestamp = "0000-00-00T00:00:00"
 
-	configFile = flag.String("config-file", "/etc/raspidoor/raspidoorwebd.yaml", "The config file to read")
+	configFile = flag.String("config-file", "", "The config file to read instead of the default configuration files")
 
 	//go:embed public/*.css
 	public embed.FS
@@ -46,7 +46,15 @@ func init() {
 func main() {
 	flag.Parse()
 
-	c, err := config.ReadConfigFile(*configFile)
+	var c *config.Config
+	var err error
+
+	if *configFile == "" {
+		c, err = config.ReadConfig()
+	} else {
+		c, err = config.ReadConfigFromFile(*configFile)
+	}
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s: failed to read config file %s: %s\n", os.Args[0], *configFile, err)
 		os.Exit(1)

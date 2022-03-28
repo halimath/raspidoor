@@ -1,23 +1,29 @@
 ---
+# This is the default configuration for raspidoord. It defines the standard layout of the GPIO pins but the
+# SIP configuration is expected not to work.
+#
+# To override any of the values defined here, create a file in /etc/raspidoor/conf.d/raspidoord.yaml and set
+# the respective values.
+
 sip:
   # SIP address of the caller (i.e. the door bell)
-  caller: "sip:klingel1@fritz.box"
+  caller: "sip:doorbell@192.168.1.1"
 
   # SIP address of the callee (i.e. some internal phone number to ring)
-  callee: "sip:**611@fritz.box"
+  callee: "sip:**1@192.168.1.1"
 
   # Max. duration to keep the phone ringing
-  maxRingingTime: 30s
+  maxRingingTime: 15s
 
   server:
     # The SIP host (your phone router)
-    host: "fritz.box"
+    host: "192.168.1.1"
     # The SIP port (should be 5060 by default)
     port: 5060
     # The SIP user name to authenticate with
-    user: klingel1
+    user: user
     # The SIP password to authenticate with
-    password: "password001"
+    password: password
     # Whether to dump protocol logs
     debug: false
 
@@ -40,7 +46,7 @@ bellPushes:
   - label: Main door
     # Each bell push has its own GPIO number (not physical pin) to read state from
     gpio: 23
-  - label: Garden Door
+  - label: Secondary Door
     # Each bell push has its own GPIO number (not physical pin) to read state from
     gpio: 24
 

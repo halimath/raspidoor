@@ -2,27 +2,25 @@ package config
 
 import (
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/halimath/appconf"
 	"github.com/halimath/raspidoor/systemd/logging"
-	"gopkg.in/yaml.v2"
 )
 
 type (
 	// Logging defines the log configuration
 	Logging struct {
 		// Target defines the log target; must be either STDOUT or SYSLOG
-		Target string `yaml:"target"`
+		Target string
 
 		// Debug defines, whether to output debug messages
-		Debug bool `yaml: "debug"`
+		Debug bool
 	}
 
 	Config struct {
-		Address string  `yaml:"address"`
-		Socket  string  `yaml:"socket"`
-		Logging Logging `yaml:"logging"`
+		Address string
+		Socket  string
+		Logging Logging
 	}
 )
 
@@ -33,26 +31,29 @@ func (c Config) NewLogger() (logging.Logger, error) {
 	return logging.Stdout(), nil
 }
 
-func ReadConfigFile(n string) (*Config, error) {
-	file, err := os.Open(n)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
-	}
-	defer file.Close()
-
-	return ReadConfig(file)
+func ReadConfig() (*Config, error) {
+	return readConfigFromFiles(
+		"/etc/raspidoor/raspidoord.yaml",
+		"/etc/raspidoor/conf.d/raspidoord.yaml",
+	)
 }
 
-func ReadConfig(r io.Reader) (*Config, error) {
-	data, err := io.ReadAll(r)
+func ReadConfigFromFile(n string) (*Config, error) {
+	return readConfigFromFiles(n)
+}
+
+func readConfigFromFiles(names ...string) (*Config, error) {
+	loaders := make([]appconf.Loader, len(names))
+	for i, n := range names {
+		loaders[i] = appconf.YAMLFile(n, i == 0)
+	}
+
+	ac, err := appconf.New(loaders...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load configuration: %s", err)
 	}
 
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
+	var c Config
+	err = ac.Bind(&c)
+	return &c, err
 }

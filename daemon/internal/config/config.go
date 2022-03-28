@@ -2,100 +2,99 @@ package config
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"time"
 
 	"github.com/halimath/raspidoor/daemon/internal/gatekeeper"
 	"github.com/halimath/raspidoor/daemon/internal/gpio"
 	"github.com/halimath/raspidoor/daemon/internal/sip"
 	"github.com/halimath/raspidoor/systemd/logging"
-	"gopkg.in/yaml.v2"
+
+	"github.com/halimath/appconf"
 )
 
 type (
 	SIPServer struct {
 		// The SIP host (your phone router)
-		Host string `yaml:"host"`
+		Host string
 
 		// The SIP port (should be 5060 by default)
-		Port int `yaml:"port"`
+		Port int
 
 		// The SIP user name to authenticate with
-		User string `yaml:"user"`
+		User string
 
 		// The SIP password to authenticate with
-		Password string `yaml:"password"`
+		Password string
 
 		// Whether to dump protocol logs
-		Debug bool `yaml:"debug"`
+		Debug bool
 	}
 
 	SIP struct {
 		// The caller's SIP address
-		Caller string `yaml:"caller"`
+		Caller string
 
 		// The callee's SIP address
-		Callee string `yaml:"callee"`
+		Callee string
 
 		// Max duration to ring the users phone
-		MaxRingingTime time.Duration `yaml:"maxRingingTime"`
+		MaxRingingTime time.Duration
 
 		// Server settings
-		Server SIPServer `yaml:"server"`
+		Server SIPServer
 	}
 
 	// StatusLED defines the config for the status led.
 	StatusLED struct {
 		// GPIO number (not the physical pin) to connect the status LED on
-		GPIO int `yaml:"gpio"`
+		GPIO int
 
 		// Duration the LED should blink when a bell push is pressed
-		BlinkDuration time.Duration `yaml:"blinkDuration"`
+		BlinkDuration time.Duration
 	}
 
 	// ExternalBell is anything that can be switched on and off.
 	ExternalBell struct {
 		// GPIO number (not the physical pin) to connect the status LED on
-		GPIO int `yaml:"gpio"`
+		GPIO int
 
 		// Duration to ring the external bell (keep the relay open) when a bell push is pressed
-		RingDuration time.Duration `yaml:"ringDuration"`
+		RingDuration time.Duration
 	}
 
 	// BellPush defines the individual bell pushes the system should react on.
 	BellPush struct {
 		// A human readable label for the bell push
-		Label string `yaml:"label"`
+		Label string
 
 		// GPIO number (not the physical pin) to connect the bell push IN to
-		GPIO int `yaml:"gpio"`
+		GPIO int
 	}
 
 	// Controller defines the config for the controller.
 	Controller struct {
 		// Socket defines the path of the Unix socket to receive commands on.
-		Socket string `yaml:"socket"`
+		Socket string
 	}
 
 	// Logging defines the log configuration
 	Logging struct {
 		// Target defines the log target; must be either STDOUT or SYSLOG
-		Target string `yaml:"target"`
+		Target string
 
 		// Debug defines, whether to output debug messages
-		Debug bool `yaml: "debug"`
+		Debug bool
 	}
 
 	// Config is the root of the config settings.
 	Config struct {
-		SIP          SIP          `yaml:"sip"`
-		StatusLED    StatusLED    `yaml:"statusLed"`
-		ExternalBell ExternalBell `yaml:"externalBell"`
-		BellPushes   []BellPush   `yaml:"bellPushes"`
-		Logging      Logging      `yaml:"logging"`
-		Controller   Controller   `yaml:"controller"`
-		DisableGPIO  bool         `yaml:"disableGpio"`
+		SIP          SIP
+		StatusLED    StatusLED
+		ExternalBell ExternalBell
+		BellPushes   []BellPush
+		Logging      Logging
+		Controller   Controller
+		DisableGPIO  bool
 	}
 )
 
@@ -172,26 +171,29 @@ func (c Config) GatekeeperOptions() (gatekeeper.Options, error) {
 	}, nil
 }
 
-func ReadConfigFile(n string) (*Config, error) {
-	file, err := os.Open(n)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
-	}
-	defer file.Close()
-
-	return ReadConfig(file)
+func ReadConfig() (*Config, error) {
+	return readConfigFromFiles(
+		"/etc/raspidoor/raspidoord.yaml",
+		"/etc/raspidoor/conf.d/raspidoord.yaml",
+	)
 }
 
-func ReadConfig(r io.Reader) (*Config, error) {
-	data, err := io.ReadAll(r)
+func ReadConfigFromFile(n string) (*Config, error) {
+	return readConfigFromFiles(n)
+}
+
+func readConfigFromFiles(names ...string) (*Config, error) {
+	loaders := make([]appconf.Loader, len(names))
+	for i, n := range names {
+		loaders[i] = appconf.YAMLFile(n, i == 0)
+	}
+
+	ac, err := appconf.New(loaders...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load configuration: %s", err)
 	}
 
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
+	var c Config
+	err = ac.Bind(&c)
+	return &c, err
 }

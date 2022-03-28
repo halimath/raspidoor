@@ -4,11 +4,11 @@ go 1.18
 
 require (
 	github.com/go-test/deep v1.0.8
+	github.com/halimath/appconf v0.0.0-20220327082622-fe7e06c8492d
 	github.com/halimath/raspidoor/controller v0.0.0
 	github.com/halimath/raspidoor/systemd v0.0.0
 	github.com/warthog618/gpiod v0.8.0
-	google.golang.org/grpc v1.42.0
-	gopkg.in/yaml.v2 v2.4.0
+	google.golang.org/grpc v1.43.0
 )
 
 replace (
@@ -17,7 +17,9 @@ replace (
 )
 
 require (
+	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/halimath/assertthat-go v0.0.0-20220327081729-20de7e695323 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf // indirect

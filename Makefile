@@ -3,7 +3,7 @@ BUILD_TIMESTAMP := $(shell date --utc --iso-8601=seconds)
 REVISION := $(shell git rev-parse HEAD)
 
 DEB_ARCH ?= armhf
-DEB_REVISION = 1
+DEB_REVISION = 2
 
 GO ?= go
 GOOS ?= linux 
@@ -60,9 +60,9 @@ raspidoor_$(VERSION)-$(DEB_REVISION)_$(DEB_ARCH): raspidoor.$(GOARCH) raspidoord
 	$(CP) $(CP_OPTS) raspidoorwebd.$(GOARCH) $@/usr/bin/raspidoorwebd
 	$(CP) $(CP_OPTS) raspidoor.$(GOARCH) $@/usr/bin/raspidoor
 
-	$(MKDIR) $(MKDIR_OPTS) $@/etc/raspidoor
-	$(CP) $(CP_OPTS) daemon/etc/raspidoord.yaml $@/etc/raspidoor
-	$(CP) $(CP_OPTS) webapp/etc/raspidoorwebd.yaml $@/etc/raspidoor
+	$(MKDIR) $(MKDIR_OPTS) $@/etc/raspidoor/conf.d
+	$(CP) $(CP_OPTS) daemon/etc/raspidoor/raspidoord.yaml $@/etc/raspidoor
+	$(CP) $(CP_OPTS) webapp/etc/raspidoor/raspidoorwebd.yaml $@/etc/raspidoor
 
 	$(MKDIR) $(MKDIR_OPTS) $@/etc/systemd/system
 	$(CP) $(CP_OPTS) daemon/etc/systemd/raspidoor.service $@/etc/systemd/system
@@ -80,7 +80,7 @@ docker-build-deb:
 	docker run --rm -it -v $(shell pwd)/out:/out raspidoor-builder:$(VERSION)
 
 clean:
-	$(RM) $(RM_OPTS) raspidoor.arm*
+	$(RM) $(RM_OPTS) raspidoor*.arm*
 
 mrproper: clean
 	$(RM) $(RM_OPTS) out

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -9,31 +8,8 @@ import (
 )
 
 func TestReadConfig(t *testing.T) {
-	r := strings.NewReader(`
-sip:
-  caller: "sip:caller@registrar.example.com"
-  callee: "sip:callee@registrar.example.com"
-  maxRingingTime: 5s
-  server:
-    host: "registrar.example.com"
-    port: 5060
-    user: caller
-    password: "password001"
-    debug: False
-statusLed:
-  gpio: 23
-  blinkDuration: 2s
-externalBell:
-  gpio: 25
-  ringDuration: 2s
-bellPushes:
-- label: Main door
-  gpio: 24
-logging:
-  debug: True	  
-`)
+	config, err := ReadConfigFromFile("./testdata/config.yaml")
 
-	config, err := ReadConfig(r)
 	if err != nil {
 		t.Fatal(err)
 	}
