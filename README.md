@@ -2,7 +2,6 @@
 
 ![CI Status][ci-img-url] 
 [![Go Report Card][go-report-card-img-url]][go-report-card-url] 
-[![Package Doc][package-doc-img-url]][package-doc-url] 
 [![Releases][release-img-url]][release-url]
 
 A door bell to phone call application for your Raspberry PI.
@@ -130,7 +129,5 @@ limitations under the License.
 [ci-img-url]: https://github.com/halimath/raspidoor/workflows/CI/badge.svg
 [go-report-card-img-url]: https://goreportcard.com/badge/github.com/halimath/raspidoor
 [go-report-card-url]: https://goreportcard.com/report/github.com/halimath/raspidoor
-[package-doc-img-url]: https://img.shields.io/badge/GoDoc-Reference-blue.svg
-[package-doc-url]: https://pkg.go.dev/github.com/halimath/raspidoor
 [release-img-url]: https://img.shields.io/github/v/release/halimath/raspidoor.svg
 [release-url]: https://github.com/halimath/raspidoor/releases
