@@ -1,5 +1,10 @@
 # raspidoor
 
+![CI Status][ci-img-url] 
+[![Go Report Card][go-report-card-img-url]][go-report-card-url] 
+[![Package Doc][package-doc-img-url]][package-doc-url] 
+[![Releases][release-img-url]][release-url]
+
 A door bell to phone call application for your Raspberry PI.
 
 ## What is _raspidoor_?
@@ -52,13 +57,28 @@ you can download and install the package yourself. The single package provides:
 * systemd service files for both the daemon and web app
 * default configuration
 
+## How to run the software?
+
+Once you installed the debian package on your raspberrypi you can configure the application. The file
+`/etc/raspidoor/raspidoord.yaml` contains a commented default configuration showing you how to configure the
+application. Although it is technically possible to edit this file, this is not recommended, as the file will
+be overwritten by package updates. Instead, create a file named `/etc/raspidoor/conf.d/raspidoord.yaml` and
+put in all configuration keys you wish to change. This file will be loaded to override the default values and
+will not be touched by any package operation.
+
+After editing the configuration, you can start the services by running
+
+```shell
+sudo systemctl start raspidoor
+```
+
 ## How to build the software?
 
 To build the software, you need a couple of tools installed. The easiest way is to use 
 [docker](https://www.docker.com/). To run the build, you can simply issue
 
 ```shell
-$ make docker-build-deb
+make docker-build-deb
 ```
 
 This will compile all the sources and create a debian package in the `out` directory as part of a docker image
@@ -106,3 +126,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+[ci-img-url]: https://github.com/halimath/raspidoor/workflows/CI/badge.svg
+[go-report-card-img-url]: https://goreportcard.com/badge/github.com/halimath/raspidoor
+[go-report-card-url]: https://goreportcard.com/report/github.com/halimath/raspidoor
+[package-doc-img-url]: https://img.shields.io/badge/GoDoc-Reference-blue.svg
+[package-doc-url]: https://pkg.go.dev/github.com/halimath/raspidoor
+[release-img-url]: https://img.shields.io/github/v/release/halimath/raspidoor.svg
+[release-url]: https://github.com/halimath/raspidoor/releases
