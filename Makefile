@@ -1,9 +1,9 @@
-VERSION = 0.2.2
+VERSION = 0.3.0
 BUILD_TIMESTAMP := $(shell date --utc --iso-8601=seconds)
 REVISION := $(shell git rev-parse HEAD)
 
 DEB_ARCH ?= armhf
-DEB_REVISION = 2
+DEB_REVISION = 1
 
 GO ?= go
 GOOS ?= linux 
