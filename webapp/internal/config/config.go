@@ -33,8 +33,8 @@ func (c Config) NewLogger() (logging.Logger, error) {
 
 func ReadConfig() (*Config, error) {
 	return readConfigFromFiles(
-		"/etc/raspidoor/raspidoord.yaml",
-		"/etc/raspidoor/conf.d/raspidoord.yaml",
+		"/etc/raspidoor/raspidoorwebd.yaml",
+		"/etc/raspidoor/conf.d/raspidoorwebd.yaml",
 	)
 }
 
